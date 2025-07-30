@@ -1,0 +1,477 @@
+/* ========================================= */
+/* АДАПТИВНАЯ ГЛАВНАЯ СТРАНИЦА */
+/* ========================================= */
+
+:root {
+    --home-gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --home-gradient-secondary: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --home-gradient-warning: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --home-gradient-success: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    --home-card-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    --home-card-shadow-hover: 0 8px 30px rgba(0,0,0,0.15);
+    --home-border-radius: 12px;
+    --home-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Основные стили для главной страницы */
+.home-page {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+/* Секция приветствия */
+.welcome-section .card {
+    background: var(--home-gradient-primary);
+    border-radius: var(--home-border-radius);
+    box-shadow: var(--home-card-shadow);
+    border: none;
+    overflow: hidden;
+    position: relative;
+}
+
+.welcome-section .card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+/* Основные карточки */
+.main-card {
+    border: none;
+    border-radius: var(--home-border-radius);
+    box-shadow: var(--home-card-shadow);
+    transition: var(--home-transition);
+    overflow: hidden;
+    background: white;
+}
+
+.main-card:hover {
+    box-shadow: var(--home-card-shadow-hover);
+    transform: translateY(-4px);
+}
+
+/* Статистические карточки */
+.stats-card {
+    background: var(--home-gradient-secondary);
+    border: none;
+    border-radius: var(--home-border-radius);
+    color: white;
+    transition: var(--home-transition);
+    overflow: hidden;
+    position: relative;
+}
+
+.stats-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    animation: shimmer 3s ease-in-out infinite;
+    pointer-events: none;
+}
+
+.stats-card:hover {
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: var(--home-card-shadow-hover);
+}
+
+.stats-card.warning {
+    background: var(--home-gradient-warning);
+}
+
+.stats-card.success {
+    background: var(--home-gradient-success);
+}
+
+.stats-card.info {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Карточки проектов */
+.project-card {
+    border: 1px solid #e9ecef;
+    border-radius: var(--home-border-radius);
+    transition: var(--home-transition);
+    overflow: hidden;
+    background: white;
+    position: relative;
+}
+
+.project-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--home-gradient-primary);
+    transform: scaleY(0);
+    transition: transform 0.3s ease;
+}
+
+.project-card:hover::before {
+    transform: scaleY(1);
+}
+
+.project-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--home-card-shadow-hover);
+    border-color: #007bff;
+}
+
+/* Карточка быстрого доступа */
+.quick-access-card {
+    background: var(--home-gradient-primary);
+    border: none;
+    border-radius: var(--home-border-radius);
+    color: white;
+    text-decoration: none;
+    transition: var(--home-transition);
+    overflow: hidden;
+    position: relative;
+}
+
+.quick-access-card::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 20px;
+    width: 0;
+    height: 0;
+    border: 8px solid transparent;
+    border-left-color: rgba(255,255,255,0.3);
+    transform: translateY(-50%);
+    transition: transform 0.3s ease;
+}
+
+.quick-access-card:hover::after {
+    transform: translateY(-50%) translateX(5px);
+}
+
+.quick-access-card:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: var(--home-card-shadow-hover);
+    color: white;
+    text-decoration: none;
+}
+
+/* Новости */
+.news-item {
+    padding: 1rem;
+    border-radius: 8px;
+    background: #f8f9fa;
+    margin-bottom: 1rem;
+    transition: var(--home-transition);
+    border-left: 4px solid transparent;
+}
+
+.news-item:hover {
+    background: #e9ecef;
+    transform: translateX(8px);
+    border-left-color: #007bff;
+}
+
+/* Badges */
+.badge-status {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 20px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Анимации */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes shimmer {
+    0%, 100% {
+        transform: translateX(-100%) translateY(-100%) rotate(45deg);
+    }
+    50% {
+        transform: translateX(100%) translateY(100%) rotate(45deg);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+.fade-in-up {
+    animation: fadeInUp 0.6s ease forwards;
+}
+
+.fade-in-up:nth-child(1) { animation-delay: 0.1s; }
+.fade-in-up:nth-child(2) { animation-delay: 0.2s; }
+.fade-in-up:nth-child(3) { animation-delay: 0.3s; }
+.fade-in-up:nth-child(4) { animation-delay: 0.4s; }
+
+/* ========================================= */
+/* МОБИЛЬНАЯ АДАПТАЦИЯ */
+/* ========================================= */
+
+@media (max-width: 768px) {
+    .container-fluid {
+        padding: 0.5rem !important;
+    }
+    
+    /* Приветствие */
+    .welcome-section h1 {
+        font-size: 1.5rem !important;
+    }
+    
+    .welcome-section p {
+        font-size: 0.9rem;
+    }
+    
+    .welcome-section .display-4 {
+        display: none !important;
+    }
+    
+    /* Статистика */
+    .display-6 {
+        font-size: 1.5rem !important;
+    }
+    
+    .stats-card .card-body {
+        padding: 1.5rem 1rem !important;
+    }
+    
+    .stats-card h6 {
+        font-size: 0.9rem;
+    }
+    
+    /* Карточки */
+    .card-body {
+        padding: 1rem !important;
+    }
+    
+    .project-card .card-body {
+        padding: 0.75rem !important;
+    }
+    
+    /* Новости */
+    .news-item {
+        padding: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .news-item h6 {
+        font-size: 1rem;
+    }
+    
+    .news-item p {
+        font-size: 0.85rem;
+    }
+    
+    /* Кнопки */
+    .btn {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+        min-height: 44px; /* Touch-friendly */
+    }
+    
+    /* Заголовки карточек */
+    .card-header h5 {
+        font-size: 1.1rem;
+    }
+    
+    /* Quick access карточка */
+    .quick-access-card .card-body {
+        padding: 1.25rem 1rem !important;
+    }
+    
+    .quick-access-card h5 {
+        font-size: 1.1rem;
+    }
+    
+    /* Аккордеон */
+    .accordion-button {
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .accordion-body {
+        padding: 0.75rem 1rem;
+        font-size: 0.85rem;
+    }
+    
+    /* Список проектов */
+    .list-group-item {
+        padding: 0.75rem 0 !important;
+    }
+    
+    .list-group-item h6 {
+        font-size: 1rem;
+    }
+    
+    .list-group-item p {
+        font-size: 0.85rem;
+    }
+    
+    /* Убираем hover эффекты на мобильных */
+    .main-card:hover,
+    .project-card:hover,
+    .stats-card:hover,
+    .quick-access-card:hover {
+        transform: none !important;
+    }
+    
+    /* Touch эффекты */
+    .touch-device .main-card:active,
+    .touch-device .project-card:active,
+    .touch-device .stats-card:active {
+        transform: scale(0.98) !important;
+        transition: transform 0.1s ease !important;
+    }
+}
+
+/* Очень маленькие экраны */
+@media (max-width: 576px) {
+    .col-md-4, .col-lg-4 {
+        margin-bottom: 1rem;
+    }
+    
+    .stats-card .display-6 {
+        font-size: 1.25rem !important;
+    }
+    
+    .stats-card h6 {
+        font-size: 0.85rem;
+    }
+    
+    .welcome-section h1 {
+        font-size: 1.25rem !important;
+    }
+    
+    .welcome-section p {
+        font-size: 0.85rem;
+    }
+    
+    .card-header {
+        padding: 0.75rem 1rem !important;
+    }
+    
+    /* Упрощенная сетка для очень маленьких экранов */
+    .small-screen .row > [class*="col-"] {
+        margin-bottom: 0.75rem;
+    }
+}
+
+/* Планшетная адаптация */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .col-lg-8 {
+        flex: 0 0 auto;
+        width: 70%;
+    }
+    
+    .col-lg-4 {
+        flex: 0 0 auto;
+        width: 30%;
+    }
+    
+    .stats-card .card-body {
+        padding: 1.5rem;
+    }
+    
+    .tablet-portrait .project-card {
+        margin-bottom: 1rem;
+    }
+}
+
+/* Высокие экраны (ландшафт на мобильных) */
+@media (max-height: 500px) and (orientation: landscape) {
+    .welcome-section {
+        margin-bottom: 1rem !important;
+    }
+    
+    .welcome-section .card-body {
+        padding: 1rem !important;
+    }
+    
+    .stats-card .card-body {
+        padding: 1rem !important;
+    }
+    
+    .display-6 {
+        font-size: 1.25rem !important;
+    }
+}
+
+/* Темная тема (если поддерживается) */
+@media (prefers-color-scheme: dark) {
+    .main-card {
+        background: #2d3748;
+        color: white;
+    }
+    
+    .news-item {
+        background: #4a5568;
+        color: white;
+    }
+    
+    .news-item:hover {
+        background: #5a6578;
+    }
+    
+    .project-card {
+        background: #2d3748;
+        color: white;
+        border-color: #4a5568;
+    }
+}
+
+/* Анимации для accessibility */
+@media (prefers-reduced-motion: reduce) {
+    .fade-in-up,
+    .main-card,
+    .project-card,
+    .stats-card,
+    .quick-access-card,
+    .news-item {
+        animation: none !important;
+        transition: none !important;
+    }
+    
+    .stats-card::before {
+        animation: none !important;
+    }
+}
+
+/* Высокий контраст */
+@media (prefers-contrast: high) {
+    .main-card,
+    .project-card {
+        border: 2px solid #000;
+    }
+    
+    .stats-card {
+        border: 2px solid #fff;
+    }
+    
+    .news-item {
+        border: 1px solid #000;
+    }
+}
