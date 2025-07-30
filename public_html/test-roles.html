@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Тест ролей и кнопок</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .user-info { background: #f0f0f0; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+        .permissions { background: #e8f5e8; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+        .buttons { background: #fff3cd; padding: 15px; border-radius: 5px; }
+        .btn { 
+            display: inline-block; 
+            padding: 8px 16px; 
+            margin: 5px; 
+            background: #007bff; 
+            color: white; 
+            text-decoration: none; 
+            border-radius: 4px; 
+            border: none;
+            cursor: pointer;
+        }
+        .btn:hover { background: #0056b3; }
+        .btn-success { background: #28a745; }
+        .btn-success:hover { background: #1e7e34; }
+        .btn-danger { background: #dc3545; }
+        .btn-danger:hover { background: #c82333; }
+        .btn-warning { background: #ffc107; color: #212529; }
+        .btn-warning:hover { background: #e0a800; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <h1>Тест ролей и кнопок действий</h1>
+    
+    @auth
+    <div class="user-info">
+        <h2>Информация о пользователе</h2>
+        <p><strong>ID:</strong> {{ Auth::user()->id }}</p>
+        <p><strong>Email:</strong> {{ Auth::user()->email }}</p>
+        <p><strong>Имя:</strong> {{ Auth::user()->name ?? 'Не указано' }}</p>
+        <p><strong>Роли:</strong> 
+            @if(Auth::user()->roles->count() > 0)
+                {{ Auth::user()->roles->pluck('name')->join(', ') }}
+            @else
+                Нет ролей
+            @endif
+        </p>
+        <p><strong>Отображаемая роль:</strong> {{ \App\Helpers\UserRoleHelper::getUserRoleDisplay() }}</p>
+    </div>
+    
+    <div class="permissions">
+        <h2>Проверка разрешений</h2>
+        <p><strong>canManageProjects:</strong> 
+            @if(\App\Helpers\UserRoleHelper::canManageProjects())
+                <span style="color: green;">✓ ДА</span>
+            @else
+                <span style="color: red;">✗ НЕТ</span>
+            @endif
+        </p>
+        
+        <p><strong>canSeeActionButtons:</strong> 
+            @if(\App\Helpers\UserRoleHelper::canSeeActionButtons())
+                <span style="color: green;">✓ ДА</span>
+            @else
+                <span style="color: red;">✗ НЕТ</span>
+            @endif
+        </p>
+        
+        <p><strong>canAccessProjects:</strong> 
+            @if(\App\Helpers\UserRoleHelper::canAccessProjects())
+                <span style="color: green;">✓ ДА</span>
+            @else
+                <span style="color: red;">✗ НЕТ</span>
+            @endif
+        </p>
+        
+        <p><strong>canManageEmployees:</strong> 
+            @if(\App\Helpers\UserRoleHelper::canManageEmployees())
+                <span style="color: green;">✓ ДА</span>
+            @else
+                <span style="color: red;">✗ НЕТ</span>
+            @endif
+        </p>
+        
+        <p><strong>canAccessEstimates:</strong> 
+            @if(\App\Helpers\UserRoleHelper::canAccessEstimates())
+                <span style="color: green;">✓ ДА</span>
+            @else
+                <span style="color: red;">✗ НЕТ</span>
+            @endif
+        </p>
+    </div>
+    
+    <div class="buttons">
+        <h2>Кнопки действий (как на реальной странице)</h2>
+        
+        @if(\App\Helpers\UserRoleHelper::canSeeActionButtons())
+            <a href="#" class="btn btn-success">Создать проект</a>
+            <a href="#" class="btn">Редактировать</a>
+            <a href="#" class="btn btn-danger">Удалить</a>
+            <a href="#" class="btn btn-warning">Настройки</a>
+        @else
+            <p style="color: red;"><strong>Кнопки действий скрыты для вашей роли</strong></p>
+        @endif
+        
+        <hr>
+        
+        <h3>Финансовые операции (из finance.blade.php)</h3>
+        @if(\App\Helpers\UserRoleHelper::canManageProjects())
+            <button class="btn btn-success" onclick="alert('Добавить работу')">Добавить работу</button>
+            <button class="btn btn-success" onclick="alert('Добавить материал')">Добавить материал</button>
+            <button class="btn btn-success" onclick="alert('Добавить транспорт')">Добавить транспорт</button>
+        @else
+            <p style="color: red;"><strong>Финансовые операции недоступны для вашей роли</strong></p>
+        @endif
+    </div>
+    
+    <div style="margin-top: 30px;">
+        <h2>Навигация</h2>
+        <a href="{{ url('/partner/projects/1') }}" class="btn">Перейти к проекту #1</a>
+        <a href="{{ url('/') }}" class="btn">На главную</a>
+    </div>
+    
+    @else
+    <div class="user-info">
+        <h2>Пользователь не авторизован</h2>
+        <p>Пожалуйста, войдите в систему для проверки ролей.</p>
+    </div>
+    @endauth
+</body>
+</html>

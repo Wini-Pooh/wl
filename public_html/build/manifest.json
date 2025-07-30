@@ -1,0 +1,23 @@
+{
+  "resources/css/app.css": {
+    "file": "assets/app-B8xp19hw.css",
+    "src": "resources/css/app.css",
+    "isEntry": true
+  },
+  "resources/css/mobile-projects.css": {
+    "file": "assets/mobile-projects-I3_5iUXX.css",
+    "src": "resources/css/mobile-projects.css",
+    "isEntry": true
+  },
+  "resources/css/mobile-utilities.css": {
+    "file": "assets/mobile-utilities-sTDvfCMh.css",
+    "src": "resources/css/mobile-utilities.css",
+    "isEntry": true
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-l0sNRNKZ.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true
+  }
+}

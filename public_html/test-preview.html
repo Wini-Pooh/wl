@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест предварительного просмотра документов</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        .document-preview-container {
+            min-height: 600px;
+            background-color: #f8f9fa;
+            border-radius: 0 0 0.375rem 0.375rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .document-preview-container iframe {
+            width: 100%;
+            height: 600px;
+            border: none;
+        }
+
+        .document-preview-container .preview-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 600px;
+            flex-direction: column;
+            color: #6c757d;
+        }
+
+        .document-preview-container .preview-placeholder i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .preview-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 600px;
+            flex-direction: column;
+            color: #6c757d;
+        }
+
+        .preview-error {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 600px;
+            flex-direction: column;
+            color: #dc3545;
+        }
+
+        .preview-error i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+<div class="container mt-4">
+    <h1>Тест предварительного просмотра документов</h1>
+    
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Настройка тестирования</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="documentUrl" class="form-label">URL документа для тестирования:</label>
+                        <input type="text" class="form-control" id="documentUrl" 
+                               value="/storage/documents/test.pdf" 
+                               placeholder="Введите путь к документу">
+                    </div>
+                    <div class="mb-3">
+                        <label for="fileName" class="form-label">Имя файла:</label>
+                        <input type="text" class="form-control" id="fileName" 
+                               value="test.pdf" 
+                               placeholder="Введите имя файла">
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="loadTestPreview()">
+                        Загрузить предварительный просмотр
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="showFileInfo()">
+                        Показать информацию о файле
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Предварительный просмотр</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div id="documentPreview" class="document-preview-container">
+                        <div class="preview-placeholder">
+                            <i class="bi bi-file-earmark"></i>
+                            <h5>Нажмите "Загрузить предварительный просмотр"</h5>
+                            <p>для проверки отображения документа</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Лог отладки</h5>
+                </div>
+                <div class="card-body">
+                    <pre id="debugLog" style="background: #f8f9fa; padding: 15px; max-height: 300px; overflow-y: auto;"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let debugMessages = [];
+
+function addDebugMessage(message) {
+    const timestamp = new Date().toLocaleTimeString();
+    debugMessages.push(`[${timestamp}] ${message}`);
+    document.getElementById('debugLog').textContent = debugMessages.join('\n');
+}
+
+function showFileInfo() {
+    const documentUrl = document.getElementById('documentUrl').value;
+    const fileName = document.getElementById('fileName').value;
+    
+    addDebugMessage(`=== ИНФОРМАЦИЯ О ФАЙЛЕ ===`);
+    addDebugMessage(`URL: ${documentUrl}`);
+    addDebugMessage(`Имя файла: ${fileName}`);
+    
+    if (fileName) {
+        const fileExtension = fileName.split('.').pop().toLowerCase();
+        addDebugMessage(`Расширение: ${fileExtension}`);
+        
+        const iconClass = getFileIcon(fileExtension);
+        addDebugMessage(`Иконка файла: ${iconClass}`);
+        
+        // Проверяем тип файла
+        if (fileExtension === 'pdf') {
+            addDebugMessage(`Тип файла: PDF - будет использован iframe`);
+        } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExtension)) {
+            addDebugMessage(`Тип файла: Изображение - будет использован img tag`);
+        } else {
+            addDebugMessage(`Тип файла: Неподдерживаемый - будет показана заглушка`);
+        }
+    }
+}
+
+function loadTestPreview() {
+    const previewContainer = document.getElementById('documentPreview');
+    const documentUrl = document.getElementById('documentUrl').value;
+    const fileName = document.getElementById('fileName').value;
+    
+    if (!documentUrl || !fileName) {
+        addDebugMessage('ОШИБКА: Необходимо указать URL и имя файла');
+        return;
+    }
+    
+    const fileExtension = fileName.split('.').pop().toLowerCase();
+    
+    addDebugMessage(`=== НАЧАЛО ЗАГРУЗКИ ПРЕДВАРИТЕЛЬНОГО ПРОСМОТРА ===`);
+    addDebugMessage(`URL: ${documentUrl}`);
+    addDebugMessage(`Файл: ${fileName}`);
+    addDebugMessage(`Расширение: ${fileExtension}`);
+    
+    // Показываем индикатор загрузки
+    previewContainer.innerHTML = `
+        <div class="preview-loading">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Загрузка...</span>
+            </div>
+            <p class="mt-3">Загрузка предварительного просмотра...</p>
+        </div>
+    `;
+    
+    addDebugMessage('Показан индикатор загрузки');
+    
+    if (fileExtension === 'pdf') {
+        addDebugMessage('Обработка PDF файла');
+        loadPdfPreview(documentUrl, previewContainer);
+    } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExtension)) {
+        addDebugMessage('Обработка изображения');
+        loadImagePreview(documentUrl, previewContainer);
+    } else {
+        addDebugMessage('Файл неподдерживаемого типа - показываем заглушку');
+        showUnsupportedFilePreview(documentUrl, fileExtension, previewContainer);
+    }
+}
+
+function loadPdfPreview(documentUrl, previewContainer) {
+    const iframe = document.createElement('iframe');
+    iframe.src = documentUrl + '#toolbar=1&navpanes=1&scrollbar=1';
+    iframe.title = 'Предпросмотр документа';
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    iframe.style.border = 'none';
+    
+    iframe.onload = function() {
+        addDebugMessage('✅ PDF загружен успешно');
+        previewContainer.innerHTML = '';
+        previewContainer.appendChild(iframe);
+    };
+    
+    iframe.onerror = function() {
+        addDebugMessage('❌ Ошибка загрузки PDF');
+        showPreviewError(previewContainer, documentUrl);
+    };
+    
+    // Устанавливаем таймаут для загрузки
+    setTimeout(() => {
+        if (previewContainer.querySelector('.preview-loading')) {
+            addDebugMessage('⏰ Таймаут загрузки PDF - показываем iframe в любом случае');
+            previewContainer.innerHTML = '';
+            previewContainer.appendChild(iframe);
+        }
+    }, 3000);
+}
+
+function loadImagePreview(documentUrl, previewContainer) {
+    const img = document.createElement('img');
+    img.src = documentUrl;
+    img.style.maxWidth = '100%';
+    img.style.maxHeight = '100%';
+    img.style.objectFit = 'contain';
+    img.style.display = 'block';
+    img.style.margin = 'auto';
+    
+    img.onload = function() {
+        addDebugMessage('✅ Изображение загружено успешно');
+        previewContainer.innerHTML = '';
+        previewContainer.appendChild(img);
+    };
+    
+    img.onerror = function() {
+        addDebugMessage('❌ Ошибка загрузки изображения');
+        showPreviewError(previewContainer, documentUrl);
+    };
+}
+
+function showUnsupportedFilePreview(documentUrl, fileExtension, previewContainer) {
+    const iconClass = getFileIcon(fileExtension);
+    previewContainer.innerHTML = `
+        <div class="preview-placeholder">
+            <i class="bi ${iconClass}"></i>
+            <h5>Предпросмотр недоступен</h5>
+            <p>Файл формата ${fileExtension.toUpperCase()}</p>
+            <a href="${documentUrl}" class="btn btn-primary" target="_blank" download>
+                <i class="bi bi-download me-1"></i>
+                Скачать для просмотра
+            </a>
+        </div>
+    `;
+    addDebugMessage('Показана заглушка для неподдерживаемого типа файла');
+}
+
+function showPreviewError(previewContainer, documentUrl) {
+    previewContainer.innerHTML = `
+        <div class="preview-error">
+            <i class="bi bi-exclamation-triangle"></i>
+            <h5>Ошибка загрузки</h5>
+            <p>Не удалось загрузить предпросмотр документа</p>
+            <a href="${documentUrl}" class="btn btn-outline-primary" target="_blank" download>
+                <i class="bi bi-download me-1"></i>
+                Скачать документ
+            </a>
+        </div>
+    `;
+}
+
+function getFileIcon(extension) {
+    const icons = {
+        'pdf': 'bi-file-earmark-pdf',
+        'doc': 'bi-file-earmark-word',
+        'docx': 'bi-file-earmark-word',
+        'xls': 'bi-file-earmark-excel',
+        'xlsx': 'bi-file-earmark-excel',
+        'ppt': 'bi-file-earmark-ppt',
+        'pptx': 'bi-file-earmark-ppt',
+        'txt': 'bi-file-earmark-text',
+        'rtf': 'bi-file-earmark-text',
+        'zip': 'bi-file-earmark-zip',
+        'rar': 'bi-file-earmark-zip',
+        'jpg': 'bi-file-earmark-image',
+        'jpeg': 'bi-file-earmark-image',
+        'png': 'bi-file-earmark-image',
+        'gif': 'bi-file-earmark-image',
+        'webp': 'bi-file-earmark-image'
+    };
+    
+    return icons[extension] || 'bi-file-earmark';
+}
+
+// Загружаем начальную информацию
+document.addEventListener('DOMContentLoaded', function() {
+    addDebugMessage('=== СТРАНИЦА ТЕСТИРОВАНИЯ ЗАГРУЖЕНА ===');
+    addDebugMessage('Готов к тестированию предварительного просмотра документов');
+    
+    // Проверяем доступность storage
+    fetch('/storage/test.txt')
+        .then(response => {
+            if (response.ok) {
+                addDebugMessage('✅ Папка /storage/ доступна');
+            } else {
+                addDebugMessage(`❌ Папка /storage/ недоступна (код: ${response.status})`);
+            }
+        })
+        .catch(error => {
+            addDebugMessage(`❌ Ошибка доступа к /storage/: ${error.message}`);
+        });
+});
+</script>
+
+</body>
+</html>
