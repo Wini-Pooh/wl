@@ -8,6 +8,7 @@ use App\Models\EmployeeFinance;
 use App\Models\Project;
 use App\Models\User;
 use App\Models\Role;
+use App\Traits\HasSubscriptionLimits;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -15,6 +16,8 @@ use Illuminate\Validation\Rule;
 
 class EmployeeController extends Controller
 {
+    use HasSubscriptionLimits;
+    
     public function __construct()
     {
         // Доступ к управлению сотрудниками только для партнеров, сотрудников и админов (НЕ прорабов)
@@ -37,7 +40,7 @@ class EmployeeController extends Controller
             return $user->id;
         }
         
-        if ($user->isForeman() && $user->employeeProfile) {
+        if (($user->isEmployee() || $user->isForeman()) && $user->employeeProfile) {
             return $user->employeeProfile->partner_id;
         }
         
@@ -120,6 +123,15 @@ class EmployeeController extends Controller
      */
     public function store(Request $request)
     {
+        // Проверяем лимиты подписки перед созданием сотрудника
+        try {
+            $this->checkResourceLimitOrFail('active_employees');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', $e->getMessage());
+        }
+        
         // Сценарий 1: Пользователь выбрал существующий аккаунт через user_id
         $existingUser = null;
         if ($request->filled('user_id')) {
@@ -196,6 +208,15 @@ class EmployeeController extends Controller
         // Сценарий 2: Пользователь не зарегистрирован - создаем только запись сотрудника без user_id
         
         $employee = Employee::create($validated);
+
+        // Увеличиваем счетчик активных сотрудников
+        $this->incrementResourceUsage('active_employees');
+        
+        // Проверяем приближение к лимиту и показываем предупреждение
+        $warningMessage = $this->getResourceLimitWarning('active_employees');
+        if ($warningMessage) {
+            session()->flash('warning', $warningMessage);
+        }
 
         // Обработка пользователя для сотрудника
         $userResult = $this->handleUserForEmployee($employee, $existingUser, $request->filled('user_id'));
@@ -314,6 +335,9 @@ class EmployeeController extends Controller
         $this->changeUserToClient($employee);
 
         $employee->delete();
+        
+        // Уменьшаем счетчик активных сотрудников
+        $this->decrementResourceUsage('active_employees');
 
         return redirect()->route('partner.employees.index')
                         ->with('success', 'Сотрудник удален!');
@@ -571,6 +595,47 @@ class EmployeeController extends Controller
                 $user->default_role_id = $clientRole->id;
                 $user->save();
             }
+        }
+    }
+    
+    /**
+     * API для получения списка сотрудников для выпадающих списков
+     */
+    public function apiEmployees(Request $request)
+    {
+        try {
+            $partnerId = $this->getPartnerId();
+            
+            if (!$partnerId) {
+                return response()->json(['success' => false, 'message' => 'Не удается определить партнера'], 403);
+            }
+            
+            $employees = Employee::where('partner_id', $partnerId)
+                ->where('status', 'active')
+                ->orderBy('first_name')
+                ->get()
+                ->map(function($employee) {
+                    return [
+                        'id' => $employee->id,
+                        'first_name' => $employee->first_name,
+                        'last_name' => $employee->last_name,
+                        'name' => $employee->full_name, // Для совместимости с JS
+                        'full_name' => $employee->full_name,
+                        'phone' => $employee->phone,
+                        'role' => $employee->role,
+                        'role_name' => $employee->role_name,
+                        'position' => $employee->role_name, // Для совместимости с JS
+                        'is_right_hand' => (bool)$employee->is_right_hand,
+                    ];
+                });
+            
+            return response()->json([
+                'success' => true,
+                'employees' => $employees
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error getting employees for API: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Ошибка при получении списка сотрудников'], 500);
         }
     }
 }

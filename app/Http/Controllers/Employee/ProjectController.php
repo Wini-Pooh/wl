@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Employee;
 
 use App\Http\Controllers\Controller;
 use App\Models\Project;
+use App\Helpers\ProjectAccessHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -15,18 +16,24 @@ class ProjectController extends Controller
     }
 
     /**
-     * Отображает список проектов (доступ к проектам партнера)
+     * Отображает список проектов с учетом прав доступа пользователя
      */
     public function index(Request $request)
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
-        $partnerId = $this->getPartnerId($request, $user);
         
-        if (!$partnerId) {
-            abort(403, 'Не удается определить партнера');
+        // Используем новую логику доступа
+        $accessibleProjects = ProjectAccessHelper::getAccessibleProjects($user);
+        
+        // Создаем query builder из коллекции доступных проектов
+        if ($accessibleProjects->isEmpty()) {
+            $query = Project::where('id', -1); // Пустой результат
+        } else {
+            $query = Project::whereIn('id', $accessibleProjects->pluck('id'));
         }
         
-        $query = Project::with('partner')->forPartner($partnerId);
+        $query->with('partner');
         
         // Поиск по телефону клиента
         if ($request->filled('phone')) {
@@ -65,15 +72,12 @@ class ProjectController extends Controller
     }
 
     /**
-     * Показывает детали проекта (полный доступ как у партнера)
+     * Показывает детали проекта с учетом прав доступа
      */
     public function show(Request $request, Project $project)
     {
-        $user = Auth::user();
-        $partnerId = $this->getPartnerId($request, $user);
-        
-        // Проверяем доступ к проекту
-        if ($project->partner_id !== $partnerId) {
+        // Проверяем доступ к проекту с помощью новой логики
+        if (!$this->checkProjectAccess($project)) {
             abort(403, 'Нет доступа к этому проекту');
         }
         
@@ -122,6 +126,7 @@ class ProjectController extends Controller
      */
     public function create(Request $request)
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
         
         // Только сотрудники могут создавать проекты (не сметчики)
@@ -137,6 +142,7 @@ class ProjectController extends Controller
      */
     public function store(Request $request)
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
         
         // Только сотрудники могут создавать проекты (не сметчики)
@@ -144,7 +150,7 @@ class ProjectController extends Controller
             abort(403, 'Недостаточно прав для создания проекта');
         }
         
-        $partnerId = $this->getPartnerId($request, $user);
+        $partnerId = $this->getEmployeePartnerId($user);
         
         if (!$partnerId) {
             abort(403, 'Не удается определить партнера');
@@ -156,7 +162,7 @@ class ProjectController extends Controller
             'client_last_name' => 'required|string|max:255',
             'client_phone' => 'required|string|max:20',
             'object_type' => 'required|in:apartment,house,office,commercial,other',
-            'work_type' => 'required|in:design,repair,renovation,construction,other',
+            'work_type' => 'required|string|max:255',
             'project_status' => 'required|in:new,in_progress,paused,completed,cancelled',
             
             // Дополнительные поля
@@ -183,27 +189,28 @@ class ProjectController extends Controller
     }
     
     /**
-     * Получает ID партнера для текущего пользователя
+     * Проверяет доступ к проекту
      */
-    private function getPartnerId(Request $request, $user)
+    private function checkProjectAccess(Project $project)
     {
-        // Админ может работать со всеми проектами
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        return ProjectAccessHelper::canAccessProject($user, $project);
+    }
+
+    /**
+     * Получает ID партнера для сотрудника
+     */
+    private function getEmployeePartnerId($user)
+    {
         if ($user->isAdmin()) {
-            return $request->get('partner_id') ?? $user->id;
+            return null; // Админ может работать со всеми проектами
         }
         
-        // Партнер работает со своими проектами
         if ($user->isPartner()) {
             return $user->id;
         }
         
-        // Сотрудник/сметчик работает с проектами своего партнера
-        $partnerId = $request->attributes->get('employee_partner_id');
-        if ($partnerId) {
-            return $partnerId;
-        }
-        
-        // Попытка получить из профиля сотрудника
         if ($user->isEmployee() || $user->isEstimator()) {
             $employeeProfile = $user->employeeProfile;
             if ($employeeProfile && $employeeProfile->status === 'active') {
@@ -215,7 +222,7 @@ class ProjectController extends Controller
     }
     
     /**
-     * Поиск проектов по номеру телефона
+     * Поиск проектов по номеру телефона с учетом прав доступа
      */
     public function searchByPhone(Request $request)
     {
@@ -223,16 +230,19 @@ class ProjectController extends Controller
             'phone' => 'required|string'
         ]);
         
+        /** @var \App\Models\User $user */
         $user = Auth::user();
-        $partnerId = $this->getPartnerId($request, $user);
         
-        if (!$partnerId) {
-            return response()->json(['message' => 'Не удается определить партнера'], 403);
-        }
+        // Получаем доступные проекты с учетом новой логики
+        $accessibleProjects = ProjectAccessHelper::getAccessibleProjects($user);
         
-        $query = Project::byClientPhone($request->phone)->forPartner($partnerId);
-        $projects = $query->get();
+        // Фильтруем по номеру телефона
+        $projects = $accessibleProjects->filter(function($project) use ($request) {
+            $phoneClean = preg_replace('/[^0-9]/', '', $request->phone);
+            $projectPhoneClean = preg_replace('/[^0-9]/', '', $project->client_phone);
+            return strpos($projectPhoneClean, $phoneClean) !== false;
+        });
         
-        return response()->json($projects);
+        return response()->json($projects->values());
     }
 }

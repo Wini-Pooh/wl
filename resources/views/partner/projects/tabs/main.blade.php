@@ -1,67 +1,76 @@
-<!-- Основная информация о проекте -->
+
+
 <div class="row">
     <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header">
+        <div class="card glassmorphism-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Детали проекта</h5>
+                @if(\App\Helpers\UserRoleHelper::canManageProjects())
+                    <button class="btn btn-primary btn-sm" data-modal-type="main">
+                        <i class="bi bi-plus-circle me-1"></i>Быстрое добавление
+                    </button>
+                @endif
             </div>
             <div class="card-body">
+                <!-- Мобильная адаптация: стекаем колонки на маленьких экранах -->
                 <div class="row">
-                    <div class="col-md-6">
-                        <h6 class="text-muted">Информация о клиенте</h6>
-                        <table class="table table-borderless">
-                            <tbody>
-                                <tr>
-                                    <td><strong>ФИО:</strong></td>
-                                    <td>{{ $project->client_full_name }}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Телефон:</strong></td>
-                                    <td><a href="tel:{{ $project->client_phone }}">{{ $project->client_phone }}</a></td>
-                                </tr>
-                                @if($project->client_email)
-                                <tr>
-                                    <td><strong>Email:</strong></td>
-                                    <td><a href="mailto:{{ $project->client_email }}">{{ $project->client_email }}</a></td>
-                                </tr>
-                                @endif
-                            </tbody>
-                        </table>
+                    <div class="col-12 col-md-6 mb-4 mb-md-0">
+                        <h6 class="text-muted mb-3"><i class="bi bi-person me-1"></i>Информация о клиенте</h6>
+                        <div class="info-list">
+                            <div class="info-item">
+                                <span class="info-label">ФИО:</span>
+                                <span class="info-value">{{ $project->client_full_name }}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Телефон:</span>
+                                <span class="info-value">
+                                    <a href="tel:{{ $project->client_phone }}" class="text-primary">{{ $project->client_phone }}</a>
+                                </span>
+                            </div>
+                            @if($project->client_email)
+                            <div class="info-item">
+                                <span class="info-label">Email:</span>
+                                <span class="info-value">
+                                    <a href="mailto:{{ $project->client_email }}" class="text-primary">{{ $project->client_email }}</a>
+                                </span>
+                            </div>
+                            @endif
+                        </div>
                     </div>
-                    <div class="col-md-6">
-                        <h6 class="text-muted">Информация об объекте</h6>
-                        <table class="table table-borderless">
-                            <tbody>
-                                <tr>
-                                    <td><strong>Адрес:</strong></td>
-                                    <td>{{ $project->object_full_address }}</td>
-                                </tr>
-                                @if($project->object_type)
-                                <tr>
-                                    <td><strong>Тип объекта:</strong></td>
-                                    <td>{{ $project->object_type }}</td>
-                                </tr>
-                                @endif
-                                @if($project->object_area)
-                                <tr>
-                                    <td><strong>Площадь:</strong></td>
-                                    <td>{{ $project->object_area }} м²</td>
-                                </tr>
-                                @endif
-                            </tbody>
-                        </table>
+                    <div class="col-12 col-md-6">
+                        <h6 class="text-muted mb-3"><i class="bi bi-geo-alt me-1"></i>Информация об объекте</h6>
+                        <div class="info-list">
+                            <div class="info-item">
+                                <span class="info-label">Адрес:</span>
+                                <span class="info-value">{{ $project->object_full_address }}</span>
+                            </div>
+                            @if($project->object_type)
+                            <div class="info-item">
+                                <span class="info-label">Тип объекта:</span>
+                                <span class="info-value">
+                                    <span class="badge bg-primary">{{ $project->object_type }}</span>
+                                </span>
+                            </div>
+                            @endif
+                            @if($project->object_area)
+                            <div class="info-item">
+                                <span class="info-label">Площадь:</span>
+                                <span class="info-value">{{ $project->object_area }} м²</span>
+                            </div>
+                            @endif
+                        </div>
                     </div>
                 </div>
 
                 @if($project->description)
-                <hr>
-                <h6 class="text-muted">Описание проекта</h6>
+                <hr class="my-4">
+                <h6 class="text-muted mb-3">Описание проекта</h6>
                 <p class="text-muted">{{ $project->description }}</p>
                 @endif
 
                 @if($project->notes)
-                <hr>
-                <h6 class="text-muted">Дополнительные заметки</h6>
+                <hr class="my-4">
+                <h6 class="text-muted mb-3">Дополнительные заметки</h6>
                 <p class="text-muted">{{ $project->notes }}</p>
                 @endif
             </div>
@@ -75,16 +84,16 @@
             </div>
             <div class="card-body">
                 @foreach($project->events()->latest()->take(5)->get() as $event)
-                <div class="d-flex align-items-start mb-3">
-                    <div class="flex-shrink-0">
+                <div class="event-item">
+                    <div class="event-icon">
                         <span class="badge bg-{{ $event->type == 'meeting' ? 'primary' : ($event->type == 'call' ? 'success' : 'info') }} rounded-pill">
                             <i class="bi bi-{{ $event->type == 'meeting' ? 'calendar-event' : ($event->type == 'call' ? 'telephone' : 'info-circle') }}"></i>
                         </span>
                     </div>
-                    <div class="flex-grow-1 ms-3">
-                        <h6 class="mb-1">{{ $event->title }}</h6>
-                        <p class="text-muted mb-1">{{ $event->description }}</p>
-                        <small class="text-muted">
+                    <div class="event-content">
+                        <h6 class="event-title">{{ $event->title }}</h6>
+                        <p class="event-description">{{ $event->description }}</p>
+                        <small class="event-date">
                             {{ $event->event_date ? \Carbon\Carbon::parse($event->event_date)->format('d.m.Y') : '' }}
                             {{ $event->event_time ? $event->event_time : '' }}
                         </small>
@@ -107,28 +116,28 @@
                 <div class="mb-4">
                     <h6 class="text-muted mb-3"><i class="bi bi-folder me-1"></i>Файлы и медиа</h6>
                     <div class="row g-2">
-                        <div class="col-6">
+                        <div class="col-lg-3 col-2">
                             <div class="border rounded p-2 text-center">
                                 <i class="bi bi-camera text-primary"></i>
                                 <div class="fw-bold">{{ $project->photos()->count() }}</div>
                                 <small class="text-muted">Фото</small>
                             </div>
                         </div>
-                        <div class="col-6">
+                        <div class="col-lg-3 col-2">
                             <div class="border rounded p-2 text-center">
                                 <i class="bi bi-paint-bucket text-info"></i>
                                 <div class="fw-bold">{{ $project->designFiles()->count() }}</div>
                                 <small class="text-muted">Дизайн</small>
                             </div>
                         </div>
-                        <div class="col-6">
+                        <div class="col-lg-3 col-2">
                             <div class="border rounded p-2 text-center">
                                 <i class="bi bi-diagram-3 text-warning"></i>
                                 <div class="fw-bold">{{ $project->schemes()->count() }}</div>
                                 <small class="text-muted">Схемы</small>
                             </div>
                         </div>
-                        <div class="col-6">
+                        <div class="col-lg-3 col-2">
                             <div class="border rounded p-2 text-center">
                                 <i class="bi bi-file-earmark-text text-secondary"></i>
                                 <div class="fw-bold">{{ $project->documents()->count() }}</div>
@@ -142,14 +151,14 @@
                 <div class="mb-4">
                     <h6 class="text-muted mb-3"><i class="bi bi-calendar me-1"></i>Расписание</h6>
                     <div class="row g-2">
-                        <div class="col-6">
+                        <div class="col-lg-3 col-2">
                             <div class="border rounded p-2 text-center">
                                 <i class="bi bi-list-task text-primary"></i>
                                 <div class="fw-bold">{{ $project->stages()->count() }}</div>
                                 <small class="text-muted">Этапы</small>
                             </div>
                         </div>
-                        <div class="col-6">
+                        <div class="col-lg-3 col-2">
                             <div class="border rounded p-2 text-center">
                                 <i class="bi bi-calendar-event text-success"></i>
                                 <div class="fw-bold">{{ $project->events()->count() }}</div>
@@ -178,21 +187,21 @@
                 <div class="mb-3">
                     <h6 class="text-muted mb-3"><i class="bi bi-wallet me-1"></i>Финансы</h6>
                     <div class="row g-2 mb-3">
-                        <div class="col-4">
+                        <div class="col-lg-3 col-2">
                             <div class="border rounded p-2 text-center">
                                 <i class="bi bi-tools text-primary"></i>
                                 <div class="fw-bold">{{ $project->works()->count() }}</div>
                                 <small class="text-muted">Работы</small>
                             </div>
                         </div>
-                        <div class="col-4">
+                        <div class="col-lg-3 col-2">
                             <div class="border rounded p-2 text-center">
                                 <i class="bi bi-box text-info"></i>
                                 <div class="fw-bold">{{ $project->materials()->count() }}</div>
                                 <small class="text-muted">Материалы</small>
                             </div>
                         </div>
-                        <div class="col-4">
+                        <div class="col-lg-3 col-2">
                             <div class="border rounded p-2 text-center">
                                 <i class="bi bi-truck text-warning"></i>
                                 <div class="fw-bold">{{ $project->transports()->count() }}</div>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Employee;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\Estimate;
+use App\Helpers\ProjectAccessHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -29,31 +30,24 @@ class DashboardController extends Controller
             abort(403, 'Не удается определить партнера');
         }
         
-        // Получаем проекты партнера
-        $projects = Project::forPartner($partnerId)
-            ->with(['stages', 'estimates'])
+        // Получаем проекты с учетом новой логики доступа (только доступные пользователю)
+        $accessibleProjects = ProjectAccessHelper::getAccessibleProjects($user);
+        $projects = $accessibleProjects->take(10);
+            
+        // Получаем сметы только для доступных проектов
+        $projectIds = $accessibleProjects->pluck('id');
+        $estimates = Estimate::whereIn('project_id', $projectIds)
+            ->with('project')
             ->orderBy('created_at', 'desc')
             ->take(10)
             ->get();
-            
-        // Получаем сметы партнера
-        $estimates = Estimate::whereHas('project', function($q) use ($partnerId) {
-            $q->where('partner_id', $partnerId);
-        })->with('project')
-        ->orderBy('created_at', 'desc')
-        ->take(10)
-        ->get();
         
-        // Статистика
+        // Статистика для доступных проектов
         $stats = [
-            'total_projects' => Project::forPartner($partnerId)->count(),
-            'active_projects' => Project::forPartner($partnerId)->where('project_status', 'in_progress')->count(),
-            'total_estimates' => Estimate::whereHas('project', function($q) use ($partnerId) {
-                $q->where('partner_id', $partnerId);
-            })->count(),
-            'pending_estimates' => Estimate::whereHas('project', function($q) use ($partnerId) {
-                $q->where('partner_id', $partnerId);
-            })->where('status', 'draft')->count(),
+            'total_projects' => $accessibleProjects->count(),
+            'active_projects' => $accessibleProjects->where('project_status', 'in_progress')->count(),
+            'total_estimates' => Estimate::whereIn('project_id', $projectIds)->count(),
+            'pending_estimates' => Estimate::whereIn('project_id', $projectIds)->where('status', 'draft')->count(),
         ];
         
         return view('employee.dashboard', compact('projects', 'estimates', 'stats', 'user'));

@@ -1,8 +1,7 @@
 @extends('layouts.app')
 
 @section('styles')
-<link rel="stylesheet" href="{{ asset('css/mobile-utilities.css') }}">
-@vite(['resources/css/home-page.css', 'public/js/home-page.js'])
+
 <style>
 /* Современная адаптивная главная страница */
 :root {

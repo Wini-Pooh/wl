@@ -22,7 +22,7 @@
                 <li class="nav-item">
                     <a class="nav-link" href="{{ route('admin.users.index') }}">
                         <i class="bi bi-people-fill"></i> 
-                        <span class="menu-text">{{ __('Управление пользователями') }}</span>
+                        <span class="menu-text">{{ __('Управление пол') }}</span>
                     </a>
                 </li>
                 @endif
@@ -65,12 +65,20 @@
                 
                 <!-- Меню документов (для всех авторизованных пользователей) -->
                 @if(Auth::check())
-                {{-- <li class="nav-item">
+                <li class="nav-item">
                     <a class="nav-link" href="{{ route('documents.index') }}">
                         <i class="bi bi-file-earmark-text-fill"></i> 
                         <span class="menu-text">{{ __('Документы') }}</span>
                     </a>
-                </li> --}}
+                </li>
+                
+                <!-- Меню тарифов (для всех авторизованных пользователей) -->
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ route('subscriptions.index') }}">
+                        <i class="bi bi-credit-card"></i> 
+                        <span class="menu-text">{{ __('Тарифы') }}</span>
+                    </a>
+                </li>
                 @endif
                 
                 <!-- Меню сотрудников (только для партнеров, сотрудников и админов - НЕ прорабов) -->
@@ -126,6 +134,9 @@
                 @endif
             </ul>
         </div>
+        
+        <!-- Компонент лимитов подписки -->
+        @include('components.subscription-limits')
     </div>
 </div>
 

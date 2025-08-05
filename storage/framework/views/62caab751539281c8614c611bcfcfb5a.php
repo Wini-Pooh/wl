@@ -9,9 +9,12 @@
 
     <title><?php echo e(config('app.name', 'Laravel')); ?></title>
 
-    <!-- Fonts -->
-    <link rel="dns-prefetch" href="//fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=Nunito" rel="stylesheet">
+    <!-- Preconnect для оптимизации загрузки шрифтов -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Основной шрифт Inter для единого дизайна -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
@@ -19,23 +22,42 @@
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
     
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+
+    <!-- ЕДИНАЯ ДИЗАЙН-СИСТЕМА - основные стили -->
+   
+    <!-- Дополнительные стили для специфических компонентов -->
+    <?php echo $__env->yieldPushContent('styles'); ?>
+    <?php echo $__env->yieldContent('styles'); ?>
+    
+    <!-- Vite Assets для JS -->
+    <?php echo app('Illuminate\Foundation\Vite')(['resources/js/app.js', 'resources/css/app.css']); ?>
+    
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- jQuery Mask Plugin -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery-mask-plugin@1.14.16/dist/jquery.mask.min.js"></script>
     
     <!-- Bootstrap JS with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- AJAX Helper -->
-    <script src="<?php echo e(asset('js/ajax-helper.js')); ?>"></script>
+    <!-- Select2 JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/ru.js"></script>
     
-    <!-- Mobile Responsive Scripts -->
-    <script src="<?php echo e(asset('js/mobile-responsive.js')); ?>"></script>
+    <!-- Маски ввода -->
+    <script src="<?php echo e(asset('js/input-masks.js')); ?>"></script>
     
-        <?php echo $__env->yieldContent('styles'); ?>
-    <?php echo $__env->yieldPushContent('styles'); ?>
-    <!-- Vite Assets -->
-    <?php echo app('Illuminate\Foundation\Vite')(['resources/css/app.css', 'resources/css/mobile-utilities.css', 'resources/js/app.js']); ?>
+    <!-- Проверка масок (только для отладки) -->
+    <script src="<?php echo e(asset('js/mask-validation-check.js')); ?>"></script>
     
+    <!-- Клиентская валидация -->
+    <script src="<?php echo e(asset('js/client-validation.js')); ?>"></script>
+    
+   
     <?php echo $__env->yieldContent('head'); ?>
 </head>
 <body>
@@ -47,62 +69,7 @@
     </div>
     <div id="app">
 
-        <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm  p-2">
-          
-                <!-- Кнопка открытия/закрытия бокового меню на мобильных устройствах -->
-                <?php if(auth()->guard()->check()): ?>
-                <button class="navbar-toggler me-2 d-md-none" type="button" id="mobileMenuToggle">
-                    <i class="bi bi-list"></i>
-                </button>
-                <?php endif; ?>
-            
-                <a class="navbar-brand" href="<?php echo e(url('/')); ?>">
-                    <?php echo e(config('app.name', 'Laravel')); ?>
-
-                </a>
-                    <!-- Right Side Of Navbar -->
-                    <ul class="navbar-nav ms-auto">
-                        <!-- Authentication Links -->
-                        <?php if(auth()->guard()->guest()): ?>
-                            <?php if(Route::has('login')): ?>
-                                <li class="nav-item">
-                                    <a class="nav-link" href="<?php echo e(route('login')); ?>"><?php echo e(__('Login')); ?></a>
-                                </li>
-                            <?php endif; ?>
-
-                            <?php if(Route::has('register')): ?>
-                                <li class="nav-item">
-                                    <a class="nav-link" href="<?php echo e(route('register')); ?>"><?php echo e(__('Register')); ?></a>
-                                </li>
-                            <?php endif; ?>
-                        <?php else: ?>
-                            <li class="nav-item dropdown">
-                                <a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" v-pre>
-                                    <?php echo e(Auth::user()->name); ?>
-
-                                    <?php if(Auth::user()->defaultRole): ?>
-                                        <span class="badge bg-secondary"><?php echo e(Auth::user()->defaultRole->name); ?></span>
-                                    <?php endif; ?>
-                                </a>
-
-                                <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                                    <a class="dropdown-item" href="<?php echo e(route('logout')); ?>"
-                                       onclick="event.preventDefault();
-                                                     document.getElementById('logout-form').submit();">
-                                        <?php echo e(__('Выйти')); ?>
-
-                                    </a>
-
-                                    <form id="logout-form" action="<?php echo e(route('logout')); ?>" method="POST" class="d-none">
-                                        <?php echo csrf_field(); ?>
-                                    </form>
-                                </div>
-                            </li>
-                        <?php endif; ?>
-                    </ul>
-             
-          
-        </nav>
+       
 
         <!-- Контейнер для flexbox размещения боковой панели и основного содержимого -->
         <div class="app-layout">
@@ -114,6 +81,9 @@
             <!-- Основной контейнер контента -->
             <div class="content-wrapper">
                 <main class="content-container">
+                    <!-- Предупреждения о лимитах подписки -->
+                    <?php echo $__env->make('components.subscription-alerts', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
+                    
                     <?php echo $__env->yieldContent('content'); ?>
                 </main>
             </div>
@@ -286,7 +256,51 @@
                 $('body').append(alertHtml);
 
                 // Автоматически скрываем через 5 секунд
-                setTimeout(function() {
+                setTimeout(() => {
+                    $('.alert:last').alert('close');
+                }, 5000);
+            }
+                setTimeout(() => {
+                    $('.alert:last').alert('close');
+                }, 5000);
+            }
+            
+            // Глобальные функции для работы с Select2
+            window.Select2Utils = {
+                // Переинициализация всех Select2 на странице
+                reinitializeAll: function() {
+                    console.log('🔄 Принудительная переинициализация всех Select2');
+                    if (window.select2TabsManager) {
+                        window.select2TabsManager.forceReinitializeAll();
+                    }
+                },
+                
+                // Инициализация Select2 в определенном контейнере
+                initializeInContainer: function(container) {
+                    console.log('🎯 Инициализация Select2 в контейнере:', container);
+                    if (window.select2TabsManager) {
+                        window.select2TabsManager.reinitializeInContainer(container);
+                    }
+                },
+                
+                // Диагностика Select2
+                diagnose: function() {
+                    if (typeof Select2Diagnostic !== 'undefined') {
+                        Select2Diagnostic.printReport();
+                    } else {
+                        console.log('❌ Select2Diagnostic не доступен');
+                    }
+                },
+                
+                // Принудительная инициализация всех необработанных select
+                forceInitializeUnprocessed: function() {
+                    if (window.select2TabsManager) {
+                        window.select2TabsManager.checkAndInitializeUnprocessedSelects();
+                    }
+                }
+            };
+
+            // Дополнительный скрипт для мобильного меню
                     $('.alert:not(.permanent)').alert('close');
                 }, 5000);
             }
@@ -298,6 +312,29 @@
 
             // Дополнительный скрипт для мобильного меню
             document.addEventListener('DOMContentLoaded', function() {
+                // Инициализация Select2 Manager
+                console.log('🚀 Инициализация Select2 в глобальном шаблоне');
+                
+                // Ждем полной загрузки всех ресурсов
+                setTimeout(function() {
+                    // Инициализируем Select2TabsManager если он доступен
+                    if (typeof Select2TabsManager !== 'undefined' && !window.select2TabsManager) {
+                        console.log('📋 Создание глобального экземпляра Select2TabsManager');
+                        window.select2TabsManager = new Select2TabsManager();
+                        window.select2TabsManager.init();
+                    }
+                    
+                    // Принудительная инициализация всех select элементов
+                    if (window.select2TabsManager) {
+                        window.select2TabsManager.initializeAllSelects();
+                    }
+                    
+                    // Диагностика если доступна
+                    if (typeof Select2Diagnostic !== 'undefined') {
+                        console.log('🔍 Запуск диагностики Select2');
+                        Select2Diagnostic.printReport();
+                    }
+                }, 500);
 
                 const mobileMenuToggle = document.getElementById('mobileMenuToggle');
                 const body = document.body;
@@ -352,6 +389,40 @@
                         });
                     }
                 });
+                
+                console.log('✅ Глобальная инициализация завершена успешно');
+            });
+
+            // Глобальные обработчики для переинициализации Select2 при изменении контента
+            // Обработчик для табов Bootstrap
+            $(document).on('shown.bs.tab', function (e) {
+                console.log('🔄 Таб переключен, переинициализация Select2...');
+                setTimeout(function() {
+                    if (window.select2TabsManager) {
+                        window.select2TabsManager.initializeAllSelects();
+                    }
+                }, 100);
+            });
+            
+            // Обработчик для модальных окон
+            $(document).on('shown.bs.modal', function (e) {
+                console.log('📋 Модальное окно открыто, инициализация Select2...');
+                const modal = e.target;
+                setTimeout(function() {
+                    if (window.select2TabsManager) {
+                        window.select2TabsManager.reinitializeInContainer(modal);
+                    }
+                }, 100);
+            });
+            
+            // Обработчик для успешных AJAX запросов
+            $(document).ajaxSuccess(function(event, xhr, settings) {
+                // Переинициализируем Select2 после успешных AJAX запросов
+                setTimeout(function() {
+                    if (window.select2TabsManager) {
+                        window.select2TabsManager.checkAndInitializeUnprocessedSelects();
+                    }
+                }, 200);
             });
 
             
@@ -456,6 +527,9 @@
         <!-- Подключаем скрипт для исправления проблемы с modal backdrop -->
         <script src="<?php echo e(asset('js/bootstrap-modal-fix.js')); ?>"></script>
         
+        <!-- Диагностический скрипт для поиска JavaScript ошибок (только для отладки) -->
+      
+        
         <!-- JavaScript для мобильного меню в navbar -->
         <script>
         // Предотвращаем мерцание при загрузке
@@ -503,7 +577,7 @@
                 loader.style.opacity = '0';
                 setTimeout(() => loader.style.display = 'none', 300);
             }
-        }, 1500);
+        }, 900);
     });
     </script>
 </body>

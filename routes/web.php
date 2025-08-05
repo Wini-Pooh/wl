@@ -18,6 +18,16 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+// Маршрут для демонстрации системы подписок
+Route::get('/subscription-overview', function () {
+    return view('subscription.overview');
+})->name('subscription.overview');
+
+// Тестовая страница для API сотрудников
+Route::get('/test-employees-api', function () {
+    return view('test-employees-api');
+})->middleware('auth')->name('test.employees.api');
+
 Auth::routes();
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
@@ -45,6 +55,20 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/document-templates/{template}', [App\Http\Controllers\DocumentTemplateController::class, 'update'])->name('document-templates.update');
     Route::delete('/document-templates/{template}', [App\Http\Controllers\DocumentTemplateController::class, 'destroy'])->name('document-templates.destroy');
     Route::get('/document-templates/{template}/get', [App\Http\Controllers\DocumentTemplateController::class, 'getTemplate'])->name('document-templates.get');
+    
+    // Система подписок и тарифных планов
+    Route::prefix('subscriptions')->name('subscriptions.')->group(function () {
+        Route::get('/', [App\Http\Controllers\SubscriptionController::class, 'index'])->name('index');
+        Route::get('/manage', [App\Http\Controllers\SubscriptionController::class, 'manage'])->name('manage');
+        Route::get('/success', [App\Http\Controllers\SubscriptionController::class, 'success'])->name('success');
+        Route::get('/{plan}', [App\Http\Controllers\SubscriptionController::class, 'show'])->name('show');
+        Route::get('/{plan}/select-period', [App\Http\Controllers\SubscriptionController::class, 'selectPeriod'])->name('select-period');
+        Route::post('/{plan}/subscribe', [App\Http\Controllers\SubscriptionController::class, 'subscribe'])->name('subscribe');
+        Route::post('/change-plan', [App\Http\Controllers\SubscriptionController::class, 'changePlan'])->name('change-plan');
+        Route::post('/cancel', [App\Http\Controllers\SubscriptionController::class, 'cancel'])->name('cancel');
+        Route::post('/resume', [App\Http\Controllers\SubscriptionController::class, 'resume'])->name('resume');
+        Route::post('/update-counters', [App\Http\Controllers\SubscriptionController::class, 'updateResourceCounters'])->name('update-counters');
+    });
 });
 
 // Подключение маршрутов для разных ролей из отдельной папки
@@ -52,6 +76,9 @@ require __DIR__.'/roles/admin.php';
 require __DIR__.'/roles/client.php';
 require __DIR__.'/roles/partner.php';
 require __DIR__.'/roles/employee.php';
+
+// Подключение тестовых маршрутов для отладки
+require __DIR__.'/test.php';
 
     // Отладочные роуты
     Route::get('/debug/role-check', function () {
@@ -78,3 +105,8 @@ Route::middleware(['auth'])->prefix('projects/{projectId}')->group(function () {
 });
 
 // Удален тестовый маршрут для системы документов
+
+// Тестовый маршрут для проверки layout
+Route::get('/test-layout', function () {
+    return view('test-layout');
+})->name('test.layout');

@@ -112,7 +112,7 @@ class User extends Authenticatable
      */
     public function isEmployee()
     {
-        return $this->hasRole('employee');
+        return $this->hasRole('employee') || $this->hasRole('foreman') || $this->hasRole('estimator');
     }
     
     /**
@@ -144,11 +144,31 @@ class User extends Authenticatable
     }
     
     /**
+     * Получает партнера для сотрудника (метод)
+     */
+    public function getPartner()
+    {
+        if ($this->isEmployee() || $this->isEstimator() || $this->isForeman()) {
+            $employeeProfile = $this->employeeProfile;
+            return $employeeProfile ? $employeeProfile->partner : null;
+        }
+        return $this;
+    }
+    
+    /**
      * Проекты партнера
      */
     public function projects()
     {
         return $this->hasMany(Project::class, 'partner_id');
+    }
+    
+    /**
+     * Проекты, к которым назначен пользователь (для сотрудников, прорабов)
+     */
+    public function assignedProjects()
+    {
+        return $this->belongsToMany(Project::class, 'employee_projects', 'employee_id', 'project_id');
     }
     
     /**
@@ -186,5 +206,90 @@ class User extends Authenticatable
     public function findForPassport($username)
     {
         return $this->where('phone', $username)->first();
+    }
+    
+    /**
+     * Подписки пользователя
+     */
+    public function subscriptions()
+    {
+        return $this->hasMany(UserSubscription::class);
+    }
+    
+    /**
+     * Активная подписка пользователя
+     */
+    public function activeSubscription()
+    {
+        // Если это сотрудник, получаем подписку от партнера
+        if ($this->isEmployee() || $this->isEstimator() || $this->isForeman()) {
+            $partner = $this->partner;
+            if ($partner && $partner->id !== $this->id) {
+                return $partner->activeSubscription();
+            }
+        }
+        
+        // Для партнеров или если партнер не найден - собственная подписка
+        return $this->hasOne(UserSubscription::class)
+            ->where('status', 'active')
+            ->where('expires_at', '>', now())
+            ->latest('expires_at');
+    }
+    
+    /**
+     * Геттер для получения активной подписки как свойства
+     */
+    public function getActiveSubscriptionAttribute()
+    {
+        return $this->activeSubscription()->first();
+    }
+    
+    /**
+     * Проверить лимит ресурса
+     */
+    public function checkResourceLimit($resource)
+    {
+        $subscription = $this->activeSubscription()->first();
+        
+        if (!$subscription) {
+            return false;
+        }
+        
+        return $subscription->checkResourceLimit($resource);
+    }
+    
+    /**
+     * Получить процент использования ресурса
+     */
+    public function getResourceUsage($resource)
+    {
+        $subscription = $this->activeSubscription()->first();
+        
+        if (!$subscription) {
+            return 100; // Если нет подписки, считаем что лимит исчерпан
+        }
+        
+        $plan = $subscription->subscriptionPlan;
+        $currentField = 'current_' . $resource;
+        $limitField = 'max_' . $resource;
+        
+        $current = $subscription->$currentField ?? 0;
+        $limit = $plan->$limitField ?? 1;
+        
+        return $limit > 0 ? ($current / $limit) * 100 : 0;
+    }
+    
+    /**
+     * Проверить доступ к функции
+     */
+    public function hasFeatureAccess($feature)
+    {
+        $subscription = $this->activeSubscription()->first();
+        
+        if (!$subscription) {
+            return false;
+        }
+        
+        return $subscription->subscriptionPlan->hasAccess($feature);
     }
 }

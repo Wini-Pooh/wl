@@ -16,6 +16,7 @@ class ProjectDesignFile extends Model
         'original_name',
         'file_path',
         'file_size',
+        'original_file_size',
         'mime_type',
         'design_type',
         'room',
@@ -25,10 +26,15 @@ class ProjectDesignFile extends Model
         'software',
         'description',
         'uploaded_by',
+        'is_optimized',
+        'optimization_data',
     ];
 
     protected $casts = [
         'file_size' => 'integer',
+        'original_file_size' => 'integer',
+        'is_optimized' => 'boolean',
+        'optimization_data' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -78,14 +84,66 @@ class ProjectDesignFile extends Model
      */
     public function getFormattedSizeAttribute()
     {
-        $bytes = $this->file_size;
-        $units = ['B', 'KB', 'MB', 'GB'];
-        
-        for ($i = 0; $bytes > 1024 && $i < count($units) - 1; $i++) {
-            $bytes /= 1024;
+        return $this->formatFileSize($this->file_size);
+    }
+
+    /**
+     * Получить отформатированный оригинальный размер файла
+     */
+    public function getFormattedOriginalSizeAttribute()
+    {
+        if ($this->original_file_size) {
+            return $this->formatFileSize($this->original_file_size);
         }
         
-        return round($bytes, 2) . ' ' . $units[$i];
+        return $this->formatted_size;
+    }
+
+    /**
+     * Получить экономию места в процентах
+     */
+    public function getCompressionRatioAttribute()
+    {
+        if ($this->original_file_size && $this->original_file_size > 0) {
+            return round((1 - $this->file_size / $this->original_file_size) * 100, 2);
+        }
+        
+        return 0;
+    }
+
+    /**
+     * Получить URL миниатюры
+     */
+    public function getThumbnailUrlAttribute($size = 'medium')
+    {
+        if ($this->is_optimized && isset($this->optimization_data['thumbnails'][$size])) {
+            return asset('storage/' . $this->optimization_data['thumbnails'][$size]['path']);
+        }
+        
+        // Возвращаем оригинальное изображение, если миниатюры нет
+        return $this->url;
+    }
+
+    /**
+     * Форматировать размер файла
+     */
+    private function formatFileSize($bytes)
+    {
+        if ($bytes >= 1073741824) {
+            $bytes = number_format($bytes / 1073741824, 2) . ' GB';
+        } elseif ($bytes >= 1048576) {
+            $bytes = number_format($bytes / 1048576, 2) . ' MB';
+        } elseif ($bytes >= 1024) {
+            $bytes = number_format($bytes / 1024, 2) . ' KB';
+        } elseif ($bytes > 1) {
+            $bytes = $bytes . ' bytes';
+        } elseif ($bytes == 1) {
+            $bytes = $bytes . ' byte';
+        } else {
+            $bytes = '0 bytes';
+        }
+
+        return $bytes;
     }
 
     /**

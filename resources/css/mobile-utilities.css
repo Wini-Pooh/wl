@@ -1,7 +1,51 @@
 /* 
- * Утилиты адаптивных классов для быстрого применения
- * Используйте эти классы в HTML для быстрой адаптации элементов
+ * Утилиты адаптивных классов для быстрого применения с современным дизайном
+ * Синие градиенты и улучшенная мобильная адаптация
  */
+
+/* ========================================= */
+/* АДАПТИВНЫЕ УТИЛИТЫ С СИНИМИ ГРАДИЕНТАМИ */
+/* ========================================= */
+
+/* Видимость на разных экранах */
+.visible-mobile {
+    display: none !important;
+}
+
+.visible-desktop {
+    display: block !important;
+}
+
+@media (max-width: 768px) {
+    .visible-mobile {
+        display: block !important;
+    }
+    
+    .visible-desktop {
+        display: none !important;
+    }
+    
+    .visible-mobile-inline {
+        display: inline !important;
+    }
+    
+    .visible-mobile-flex {
+        display: flex !important;
+    }
+}
+
+/* Скрытие элементов на мобильных */
+@media (max-width: 768px) {
+    .hidden-mobile {
+        display: none !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .hidden-xs {
+        display: none !important;
+    }
+}
 
 /* ========================================= */
 /* МОБИЛЬНАЯ АДАПТАЦИЯ ПРОЕКТОВ */
@@ -10,13 +54,16 @@
 @media (max-width: 768px) {
     /* Мобильные карточки проектов */
     .mobile-project-card {
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        transition: box-shadow 0.2s ease;
+        border-radius: 16px;
+        box-shadow: 0 4px 15px rgba(30, 64, 175, 0.12);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background: linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%);
+        backdrop-filter: blur(10px);
     }
     
     .mobile-project-card:hover {
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        box-shadow: 0 8px 25px rgba(30, 64, 175, 0.2);
+        transform: translateY(-2px);
     }
     
     /* Адаптивные переключатели режимов */

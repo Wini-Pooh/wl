@@ -6,10 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Role;
 use App\Models\Employee;
+use App\Models\SubscriptionPlan;
+use App\Models\UserSubscription;
 use Illuminate\Foundation\Auth\RegistersUsers;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class RegisterController extends Controller
 {
@@ -86,10 +89,54 @@ class RegisterController extends Controller
             $user->assignRole($clientRole);
         }
         
+        // Назначаем тестовый тарифный план
+        $this->assignTestSubscription($user);
+        
         // Проверяем, есть ли сотрудник с этим номером телефона без привязки к пользователю
         $this->checkAndLinkEmployee($user);
         
         return $user;
+    }
+    
+    /**
+     * Назначает тестовый тарифный план новому пользователю
+     */
+    private function assignTestSubscription(User $user)
+    {
+        try {
+            // Находим тестовый тарифный план
+            $testPlan = SubscriptionPlan::where('slug', 'test')->first();
+            
+            if ($testPlan) {
+                // Создаем подписку на год (для тестового плана можем дать подольше)
+                UserSubscription::create([
+                    'user_id' => $user->id,
+                    'subscription_plan_id' => $testPlan->id,
+                    'status' => 'active',
+                    'billing_period' => 'yearly',
+                    'starts_at' => now(),
+                    'expires_at' => now()->addYear(), // На год для тестового плана
+                    'active_projects_count' => 0,
+                    'used_storage_mb' => 0,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                
+                Log::info('Test subscription assigned to new user', [
+                    'user_id' => $user->id,
+                    'plan_id' => $testPlan->id,
+                    'plan_name' => $testPlan->name
+                ]);
+            } else {
+                Log::warning('Test subscription plan not found for new user', [
+                    'user_id' => $user->id
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error assigning test subscription to new user: ' . $e->getMessage(), [
+                'user_id' => $user->id
+            ]);
+        }
     }
     
     /**

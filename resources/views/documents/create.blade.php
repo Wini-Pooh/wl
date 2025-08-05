@@ -57,7 +57,7 @@
                                         <select class="form-select" id="project_id" name="project_id">
                                             <option value="">Не привязан к проекту</option>
                                             @foreach($projects as $project)
-                                                <option value="{{ $project->id }}">{{ $project->title }}</option>
+                                                <option value="{{ $project->id }}">{{ $project->client_last_name }} {{ $project->client_first_name }} - {{ $project->object_type }}</option>
                                             @endforeach
                                         </select>
                                     </div>

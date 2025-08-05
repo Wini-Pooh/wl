@@ -42,22 +42,31 @@ class ProjectModalController extends Controller
             case 'scheme':
                 $view = view('partner.projects.tabs.modals.scheme-modal', compact('project', 'params'))->render();
                 break;
+            case 'work':
             case 'work-add':
                 $view = view('partner.projects.tabs.modals.work-modal', compact('project', 'params'))->render();
                 break;
+            case 'material':
             case 'material-add':
                 $view = view('partner.projects.tabs.modals.material-modal', compact('project', 'params'))->render();
                 break;
+            case 'transport':
             case 'transport-add':
                 $view = view('partner.projects.tabs.modals.transport-modal', compact('project', 'params'))->render();
                 break;
+            case 'stage':
             case 'stage-add':
             case 'stage-edit':
                 $view = view('partner.projects.tabs.modals.stage-modal', compact('project', 'params'))->render();
                 break;
+            case 'event':
             case 'event-add':
             case 'event-edit':
                 $view = view('partner.projects.tabs.modals.event-modal', compact('project', 'params'))->render();
+                break;
+            case 'main':
+            case 'quick-add':
+                $view = view('partner.projects.tabs.modals.main-modal', compact('project', 'params'))->render();
                 break;
             case 'work-edit':
                 $view = view('partner.projects.tabs.modals.work-modal', compact('project', 'params'))->render();

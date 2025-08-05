@@ -22,7 +22,7 @@
                 <li class="nav-item">
                     <a class="nav-link" href="<?php echo e(route('admin.users.index')); ?>">
                         <i class="bi bi-people-fill"></i> 
-                        <span class="menu-text"><?php echo e(__('Управление пользователями')); ?></span>
+                        <span class="menu-text"><?php echo e(__('Управление пол')); ?></span>
                     </a>
                 </li>
                 <?php endif; ?>
@@ -65,7 +65,20 @@
                 
                 <!-- Меню документов (для всех авторизованных пользователей) -->
                 <?php if(Auth::check()): ?>
+                <li class="nav-item">
+                    <a class="nav-link" href="<?php echo e(route('documents.index')); ?>">
+                        <i class="bi bi-file-earmark-text-fill"></i> 
+                        <span class="menu-text"><?php echo e(__('Документы')); ?></span>
+                    </a>
+                </li>
                 
+                <!-- Меню тарифов (для всех авторизованных пользователей) -->
+                <li class="nav-item">
+                    <a class="nav-link" href="<?php echo e(route('subscriptions.index')); ?>">
+                        <i class="bi bi-credit-card"></i> 
+                        <span class="menu-text"><?php echo e(__('Тарифы')); ?></span>
+                    </a>
+                </li>
                 <?php endif; ?>
                 
                 <!-- Меню сотрудников (только для партнеров, сотрудников и админов - НЕ прорабов) -->
@@ -121,6 +134,9 @@
                 <?php endif; ?>
             </ul>
         </div>
+        
+        <!-- Компонент лимитов подписки -->
+        <?php echo $__env->make('components.subscription-limits', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
     </div>
 </div>
 

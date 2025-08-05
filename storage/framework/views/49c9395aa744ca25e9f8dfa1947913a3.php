@@ -1,82 +1,74 @@
 
 
 <?php $__env->startSection('styles'); ?>
-<link rel="stylesheet" href="<?php echo e(asset('css/mobile-projects.css')); ?>">
+<link href="<?php echo e(asset('css/mobile-project-list.css')); ?>" rel="stylesheet">
 <?php $__env->stopSection(); ?>
 
 <?php $__env->startSection('content'); ?>
-<div class="container-fluid">
-    <div class="row">
+<div class="container-fluid fade-in p-responsive">
+    <div class="row" style="">
         <div class="col-md-12">
-            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
-                <h2 class="mb-0 fs-mobile-3">
+            <!-- Заголовок с современным дизайном -->
+            <div class="row flex justify-content-between d-flex mb-4 gap-3">
+                <h2 class="flex col-8 mb-0 modern-header">
                     <i class="bi bi-building me-2"></i>
                     <?php if(Auth::check() && Auth::user()->isClient()): ?>
-                        Мои объекты
+                        <span class="visible-mobile">Мои объекты</span>
+                        <span class="visible-desktop">Мои объекты</span>
                     <?php else: ?>
-                        Управление объектами
+                        <span class="visible-mobile">Объекты</span>
+                        <span class="visible-desktop">Управление объектами</span>
                     <?php endif; ?>
                 </h2>
                 <?php if(\App\Helpers\UserRoleHelper::canManageProjects()): ?>
-                <a href="<?php echo e(route('partner.projects.create')); ?>" class="btn btn-primary btn-lg d-md-none w-100">
-                    <i class="bi bi-plus-circle me-2"></i>
-                    Создать объект
-                </a>
-                <a href="<?php echo e(route('partner.projects.create')); ?>" class="btn btn-primary d-none d-md-inline-flex">
-                    <i class="bi bi-plus-circle me-2"></i>
-                    Создать объект
-                </a>
+                <div class=" col-4 d-flex flex-column d-md-block w-100 w-md-auto" style="max-width: 300px">
+                    <a href="<?php echo e(route('partner.projects.create')); ?>" class="btn btn-primary btn-create-mobile visible-mobile mb-2 touch-target">
+                        <i class="bi bi-plus-circle me-2"></i>
+                        Создать объект
+                    </a>
+                    <a href="<?php echo e(route('partner.projects.create')); ?>" class="btn btn-primary visible-desktop shadow-blue-hover">
+                        <i class="bi bi-plus-circle me-2"></i>
+                        Создать объект
+                    </a>
+                </div>
                 <?php endif; ?>
             </div>
             
-            <!-- Фильтры и поиск -->
-            <div class="card mb-4">
-                <div class="card-body">
-                    <!-- Мобильная кнопка сворачивания фильтров -->
-                    <div class="d-md-none mb-3">
-                        <button class="btn btn-outline-primary w-100" type="button" data-bs-toggle="collapse" 
-                                data-bs-target="#filtersCollapse" aria-expanded="false" aria-controls="filtersCollapse">
-                            <i class="bi bi-funnel me-2"></i>
-                            Фильтры и поиск
-                            <i class="bi bi-chevron-down ms-auto"></i>
-                        </button>
-                    </div>
-                    
-                    <div class="collapse d-md-block" id="filtersCollapse">
-                        <form method="GET" action="<?php echo e(route('partner.projects.index')); ?>" id="filterForm">
-                            <input type="hidden" name="view_mode" value="<?php echo e($viewMode ?? 'list'); ?>" id="viewModeInput">
-                            <div class="row g-3">
-                                <!-- Основной поиск - всегда полная ширина на мобильных -->
-                                <div class="col-12 col-md-3">
-                                    <label for="search" class="form-label fs-mobile-6">Поиск по клиенту/адресу</label>
-                                    <input type="text" class="form-control form-control-lg d-md-none" id="search" name="search" 
-                                           value="<?php echo e(request('search')); ?>" placeholder="Введите для поиска...">
-                                    <input type="text" class="form-control d-none d-md-block" id="search-desktop" name="search" 
+            <!-- Фильтры с улучшенной мобильной адаптацией -->
+            <div class="filters-mobile-container d-md-none">
+                <button class="filters-toggle-mobile" type="button" data-bs-toggle="collapse" 
+                        data-bs-target="#filtersCollapseMobile" aria-expanded="false" aria-controls="filtersCollapseMobile">
+                    <span>
+                        <i class="bi bi-funnel me-2"></i>
+                        Фильтры и поиск
+                    </span>
+                    <i class="bi bi-chevron-down chevron"></i>
+                </button>
+                
+                <div class="collapse" id="filtersCollapseMobile">
+                    <div class="p-3">
+                        <form method="GET" action="<?php echo e(route('partner.projects.index')); ?>" id="filterFormMobile">
+                            <input type="hidden" name="view_mode" value="<?php echo e($viewMode ?? 'list'); ?>">
+                            
+                            <div class="mobile-grid">
+                                <!-- Основной поиск -->
+                                <div>
+                                    <label for="searchMobile" class="form-label">Поиск по клиенту/адресу</label>
+                                    <input type="text" class="form-control" id="searchMobile" name="search" 
                                            value="<?php echo e(request('search')); ?>" placeholder="Введите для поиска...">
                                 </div>
                                 
                                 <!-- Телефон -->
-                                <div class="col-12 col-md-3">
-                                    <label for="phone" class="form-label fs-mobile-6">Телефон клиента</label>
-                                    <input type="text" class="form-control form-control-lg d-md-none" id="phone" name="phone" 
-                                           value="<?php echo e(request('phone')); ?>" placeholder="+7 (999) 123-45-67">
-                                    <input type="text" class="form-control d-none d-md-block" id="phone-desktop" name="phone" 
+                                <div>
+                                    <label for="phoneMobile" class="form-label">Телефон клиента</label>
+                                    <input type="text" class="form-control" id="phoneMobile" name="phone" 
                                            value="<?php echo e(request('phone')); ?>" placeholder="+7 (999) 123-45-67">
                                 </div>
                                 
                                 <!-- Статус -->
-                                <div class="col-6 col-md-2">
-                                    <label for="status" class="form-label fs-mobile-6">Статус</label>
-                                    <select class="form-select form-select-lg d-md-none" id="status" name="status">
-                                        <option value="">Все статусы</option>
-                                        <?php $__currentLoopData = \App\Models\Project::getStatuses(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $key => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                            <option value="<?php echo e($key); ?>" <?php echo e(request('status') == $key ? 'selected' : ''); ?>>
-                                                <?php echo e($label); ?>
-
-                                            </option>
-                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                                    </select>
-                                    <select class="form-select d-none d-md-block" id="status-desktop" name="status">
+                                <div>
+                                    <label for="statusMobile" class="form-label">Статус</label>
+                                    <select class="form-select" id="statusMobile" name="status">
                                         <option value="">Все статусы</option>
                                         <?php $__currentLoopData = \App\Models\Project::getStatuses(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $key => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                             <option value="<?php echo e($key); ?>" <?php echo e(request('status') == $key ? 'selected' : ''); ?>>
@@ -88,18 +80,9 @@
                                 </div>
                                 
                                 <!-- Тип объекта -->
-                                <div class="col-6 col-md-2">
-                                    <label for="object_type" class="form-label fs-mobile-6">Тип объекта</label>
-                                    <select class="form-select form-select-lg d-md-none" id="object_type" name="object_type">
-                                        <option value="">Все типы</option>
-                                        <?php $__currentLoopData = \App\Models\Project::getObjectTypes(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $key => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                            <option value="<?php echo e($key); ?>" <?php echo e(request('object_type') == $key ? 'selected' : ''); ?>>
-                                                <?php echo e($label); ?>
-
-                                            </option>
-                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                                    </select>
-                                    <select class="form-select d-none d-md-block" id="object_type-desktop" name="object_type">
+                                <div>
+                                    <label for="objectTypeMobile" class="form-label">Тип объекта</label>
+                                    <select class="form-select" id="objectTypeMobile" name="object_type">
                                         <option value="">Все типы</option>
                                         <?php $__currentLoopData = \App\Models\Project::getObjectTypes(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $key => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                             <option value="<?php echo e($key); ?>" <?php echo e(request('object_type') == $key ? 'selected' : ''); ?>>
@@ -109,27 +92,82 @@
                                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                     </select>
                                 </div>
-                                
-                                <!-- Кнопки -->
-                                <div class="col-12 col-md-2 d-flex align-items-end">
-                                    <div class="d-grid d-md-flex gap-2 w-100">
-                                        <button type="submit" class="btn btn-primary btn-lg d-md-none">
-                                            <i class="bi bi-search me-2"></i> Найти
-                                        </button>
-                                        <button type="submit" class="btn btn-outline-primary d-none d-md-inline-flex me-2">
-                                            <i class="bi bi-search"></i> Поиск
-                                        </button>
-                                        <a href="<?php echo e(route('partner.projects.index')); ?>" class="btn btn-outline-secondary btn-lg d-md-none">
-                                            <i class="bi bi-x-circle me-2"></i> Сбросить
-                                        </a>
-                                        <a href="<?php echo e(route('partner.projects.index')); ?>" class="btn btn-outline-secondary d-none d-md-inline-flex">
-                                            <i class="bi bi-x-circle"></i>
-                                        </a>
-                                    </div>
-                                </div>
+                            </div>
+                            
+                            <div class="action-buttons-mobile mt-3">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-search me-2"></i> Найти объекты
+                                </button>
+                                <a href="<?php echo e(route('partner.projects.index')); ?>" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-circle me-2"></i> Сбросить фильтры
+                                </a>
                             </div>
                         </form>
                     </div>
+                </div>
+            </div>
+            
+            <!-- Фильтры для десктопа -->
+            <div class="card filters-card mb-4 glassmorphism-card d-none d-md-block">
+                <div class="card-body">
+                    <form method="GET" action="<?php echo e(route('partner.projects.index')); ?>" id="filterForm">
+                        <input type="hidden" name="view_mode" value="<?php echo e($viewMode ?? 'list'); ?>" id="viewModeInput">
+                        <div class="row g-3">
+                            <!-- Основной поиск -->
+                            <div class="col-md-3">
+                                <label for="search" class="form-label">Поиск по клиенту/адресу</label>
+                                <input type="text" class="form-control" id="search" name="search" 
+                                       value="<?php echo e(request('search')); ?>" placeholder="Введите для поиска...">
+                            </div>
+                            
+                            <!-- Телефон -->
+                            <div class="col-md-3">
+                                <label for="phone" class="form-label">Телефон клиента</label>
+                                <input type="text" class="form-control" id="phone" name="phone" 
+                                       value="<?php echo e(request('phone')); ?>" placeholder="+7 (999) 123-45-67">
+                            </div>
+                            
+                            <!-- Статус -->
+                            <div class="col-md-2">
+                                <label for="status" class="form-label">Статус</label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="">Все статусы</option>
+                                    <?php $__currentLoopData = \App\Models\Project::getStatuses(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $key => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <option value="<?php echo e($key); ?>" <?php echo e(request('status') == $key ? 'selected' : ''); ?>>
+                                            <?php echo e($label); ?>
+
+                                        </option>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                </select>
+                            </div>
+                            
+                            <!-- Тип объекта -->
+                            <div class="col-md-2">
+                                <label for="object_type" class="form-label">Тип объекта</label>
+                                <select class="form-select" id="object_type" name="object_type">
+                                    <option value="">Все типы</option>
+                                    <?php $__currentLoopData = \App\Models\Project::getObjectTypes(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $key => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <option value="<?php echo e($key); ?>" <?php echo e(request('object_type') == $key ? 'selected' : ''); ?>>
+                                            <?php echo e($label); ?>
+
+                                        </option>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                </select>
+                            </div>
+                            
+                            <!-- Кнопки -->
+                            <div class="col-md-2 d-flex align-items-end">
+                                <div class="d-flex gap-2 w-100">
+                                    <button type="submit" class="btn btn-outline-primary flex-fill">
+                                        <i class="bi bi-search"></i>
+                                    </button>
+                                    <a href="<?php echo e(route('partner.projects.index')); ?>" class="btn btn-outline-secondary">
+                                        <i class="bi bi-x-circle"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
                 </div>
             </div>
             
@@ -138,26 +176,47 @@
                 <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
                     <h5 class="mb-0 mb-2 mb-md-0">Список объектов (<?php echo e($projects->total()); ?>)</h5>
                     
-                    <!-- Переключатель режимов - адаптивный -->
-                    <div class="btn-group w-100 w-md-auto" role="group" aria-label="Режим отображения">
-                        <input type="radio" class="btn-check" name="viewMode" id="listView" value="list" <?php echo e(($viewMode ?? 'list') === 'list' ? 'checked' : ''); ?>>
-                        <label class="btn btn-outline-primary btn-lg d-md-none" for="listView" title="8 объектов на странице">
-                            <i class="bi bi-list-ul me-2"></i> Список
+                    <!-- Переключатель режимов - адаптивный с улучшенной мобильной поддержкой -->
+                    <div class="btn-group w-100 w-md-auto" role="group" aria-label="Режим отображения" data-mobile-enhanced="true">
+                        <input type="radio" class="btn-check" name="viewMode" id="listView" value="list" 
+                               <?php echo e(($viewMode ?? 'list') === 'list' ? 'checked' : ''); ?>
+
+                               aria-describedby="listViewHint">
+                        <label class="btn btn-outline-primary btn-lg d-md-none touch-optimized" 
+                               for="listView" 
+                               title="Режим списка - 8 объектов на странице"
+                               data-mode="list"
+                               tabindex="0">
+                            <i class="bi bi-list-ul me-2" aria-hidden="true"></i> 
+                            <span class="mode-text">Список</span>
                         </label>
-                        <label class="btn btn-outline-primary d-none d-md-inline-flex" for="listView" title="8 объектов на странице">
-                            <i class="bi bi-list-ul"></i> Список
+                        <label class="btn btn-outline-primary d-none d-md-inline-flex" 
+                               for="listView" 
+                               title="8 объектов на странице">
+                            <i class="bi bi-list-ul" aria-hidden="true"></i> Список
                             <span class="view-mode-indicator">(8)</span>
                         </label>
                         
-                        <input type="radio" class="btn-check" name="viewMode" id="cardView" value="cards" <?php echo e(($viewMode ?? 'list') === 'cards' ? 'checked' : ''); ?>>
-                        <label class="btn btn-outline-primary btn-lg d-md-none" for="cardView" title="6 карточек на странице">
-                            <i class="bi bi-grid-3x3-gap me-2"></i> Карточки
+                        <input type="radio" class="btn-check" name="viewMode" id="cardView" value="cards" 
+                               <?php echo e(($viewMode ?? 'list') === 'cards' ? 'checked' : ''); ?>
+
+                               aria-describedby="cardViewHint">
+                        <label class="btn btn-outline-primary btn-lg d-md-none touch-optimized" 
+                               for="cardView" 
+                               title="Режим карточек - 6 карточек на странице"
+                               data-mode="cards"
+                               tabindex="0">
+                            <i class="bi bi-grid-3x3-gap me-2" aria-hidden="true"></i> 
+                            <span class="mode-text">Карточки</span>
                         </label>
-                        <label class="btn btn-outline-primary d-none d-md-inline-flex" for="cardView" title="6 карточек на странице">
-                            <i class="bi bi-grid-3x3-gap"></i> Карточки
+                        <label class="btn btn-outline-primary d-none d-md-inline-flex" 
+                               for="cardView" 
+                               title="6 карточек на странице">
+                            <i class="bi bi-grid-3x3-gap" aria-hidden="true"></i> Карточки
                             <span class="view-mode-indicator">(6)</span>
                         </label>
-                    </div>
+                        
+                         </div>
                 </div>
                 <div class="card-body">
                     <?php if($projects->count() > 0): ?>
@@ -681,7 +740,93 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.style.transform = 'scale(1)';
             });
         });
+        
+        // Специальная обработка для кнопок переключения режимов
+        const viewModeLabels = document.querySelectorAll('.btn-group[aria-label="Режим отображения"] label');
+        viewModeLabels.forEach(label => {
+            // Добавляем haptic feedback (если поддерживается)
+            label.addEventListener('touchstart', function() {
+                if (navigator.vibrate) {
+                    navigator.vibrate(10); // Короткая вибрация 10мс
+                }
+            });
+            
+            // Улучшенная анимация для touch
+            label.addEventListener('touchstart', function(e) {
+                this.style.transition = 'transform 0.1s ease';
+                this.style.transform = 'scale(0.97)';
+            });
+            
+            label.addEventListener('touchend', function(e) {
+                this.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+                this.style.transform = 'scale(1)';
+                
+                // Добавляем визуальную обратную связь
+                const radioInput = document.getElementById(this.getAttribute('for'));
+                if (radioInput && !radioInput.checked) {
+                    // Показываем эффект волны только при выборе новой опции
+                    this.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.3)';
+                    setTimeout(() => {
+                        this.style.boxShadow = '';
+                    }, 300);
+                }
+            });
+            
+            // Предотвращаем случайные переключения при скролле
+            label.addEventListener('touchmove', function(e) {
+                this.style.transform = 'scale(1)';
+            });
+        });
     }
+    
+    // Улучшенная обработка изменений режима просмотра
+    function enhancedUpdateViewMode(mode) {
+        updateViewMode(mode);
+        
+        // Добавляем визуальную обратную связь
+        const activeLabel = document.querySelector(`label[for="${mode}View"]`);
+        if (activeLabel && window.innerWidth <= 767) {
+            activeLabel.style.animation = 'mobileButtonSelect 0.4s ease';
+            setTimeout(() => {
+                activeLabel.style.animation = '';
+            }, 400);
+        }
+        
+        // Сохраняем в localStorage с timestamp для аналитики
+        const modeData = {
+            mode: mode,
+            timestamp: Date.now(),
+            viewport: {
+                width: window.innerWidth,
+                height: window.innerHeight
+            }
+        };
+        localStorage.setItem('projectsViewModeData', JSON.stringify(modeData));
+    }
+    
+    // Перезаписываем стандартные обработчики
+    listViewRadio.removeEventListener('change', listViewRadio.onchange);
+    cardViewRadio.removeEventListener('change', cardViewRadio.onchange);
+    
+    listViewRadio.addEventListener('change', function() {
+        if (this.checked) {
+            enhancedUpdateViewMode('list');
+            // Небольшая задержка для завершения анимации перед отправкой формы
+            setTimeout(() => {
+                filterForm.submit();
+            }, window.innerWidth <= 767 ? 200 : 0);
+        }
+    });
+    
+    cardViewRadio.addEventListener('change', function() {
+        if (this.checked) {
+            enhancedUpdateViewMode('cards');
+            // Небольшая задержка для завершения анимации перед отправкой формы
+            setTimeout(() => {
+                filterForm.submit();
+            }, window.innerWidth <= 767 ? 200 : 0);
+        }
+    });
 });
 </script>
 <?php $__env->stopSection(); ?>

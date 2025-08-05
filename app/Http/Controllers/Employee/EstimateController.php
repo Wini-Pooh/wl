@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Employee;
 use App\Http\Controllers\Controller;
 use App\Models\Estimate;
 use App\Models\Project;
+use App\Helpers\ProjectAccessHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -21,6 +22,7 @@ class EstimateController extends Controller
      */
     public function index(Request $request)
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
         $partnerId = $this->getPartnerId($request, $user);
         
@@ -28,10 +30,12 @@ class EstimateController extends Controller
             abort(403, 'Не удается определить партнера');
         }
         
+        // Получаем только проекты, доступные пользователю
+        $accessibleProjects = ProjectAccessHelper::getAccessibleProjects($user);
+        $projectIds = $accessibleProjects->pluck('id');
+        
         $query = Estimate::with('project')
-            ->whereHas('project', function($q) use ($partnerId) {
-                $q->where('partner_id', $partnerId);
-            });
+            ->whereIn('project_id', $projectIds);
             
         // Фильтр по поиску
         if ($request->filled('search')) {
@@ -62,8 +66,8 @@ class EstimateController extends Controller
         
         $estimates = $query->orderBy('created_at', 'desc')->paginate(15);
         
-        // Получаем проекты для фильтра
-        $projects = Project::forPartner($partnerId)->get();
+        // Получаем проекты для фильтра (только доступные пользователю)
+        $projects = $accessibleProjects;
         
         return view('employee.estimates.index', compact('estimates', 'projects'));
     }
@@ -73,11 +77,11 @@ class EstimateController extends Controller
      */
     public function show(Request $request, Estimate $estimate)
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
-        $partnerId = $this->getPartnerId($request, $user);
         
-        // Проверяем доступ к смете
-        if ($estimate->project->partner_id !== $partnerId) {
+        // Проверяем доступ к проекту через новую систему
+        if (!ProjectAccessHelper::canAccessProject($user, $estimate->project)) {
             abort(403, 'Нет доступа к этой смете');
         }
         
@@ -91,6 +95,7 @@ class EstimateController extends Controller
      */
     public function create(Request $request)
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
         
         $partnerId = $this->getPartnerId($request, $user);
@@ -99,7 +104,8 @@ class EstimateController extends Controller
             abort(403, 'Не удается определить партнера');
         }
         
-        $projects = Project::forPartner($partnerId)->get();
+        // Получаем только доступные пользователю проекты
+        $projects = ProjectAccessHelper::getAccessibleProjects($user);
         
         return view('employee.estimates.create', compact('projects'));
     }
@@ -109,6 +115,7 @@ class EstimateController extends Controller
      */
     public function store(Request $request)
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
         
         // Только сметчики, партнеры и админы могут создавать сметы

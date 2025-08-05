@@ -1,53 +1,53 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container-fluid">
+<div class="container-fluid fade-in">
     <div class="row">
         <div class="col-md-12">
-            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
-                <h2 class="mb-2 mb-md-0">
+            <div class="d-flex justify-content-between align-items-start align-items-md-center mb-4 flex-wrap gap-2">
+                <h2 class="mb-0 gradient-text">
                     <i class="bi bi-people me-2"></i>
-                    <span class="d-none d-sm-inline">Управление сотрудниками</span>
-                    <span class="d-sm-none">Сотрудники</span>
+                    <span class="d-none d-md-inline">Управление сотрудниками</span>
+                    <span class="d-md-none">Сотрудники</span>
                 </h2>
-                <div class="btn-group flex-wrap">
-                    <a href="{{ route('partner.employees.create') }}" class="btn btn-primary">
-                        <i class="bi bi-plus-circle me-2"></i>
-                        <span class="d-none d-sm-inline">Добавить сотрудника</span>
-                        <span class="d-sm-none">Добавить</span>
+                <div class="btn-group-mobile d-md-flex gap-2">
+                    <a href="{{ route('partner.employees.create') }}" class="btn btn-primary shadow-blue">
+                        <i class="bi bi-plus-circle me-1"></i>
+                        <span class="d-none d-lg-inline">Добавить сотрудника</span>
+                        <span class="d-lg-none">Добавить</span>
                     </a>
                     <a href="{{ route('partner.employees.dashboard') }}" class="btn btn-success">
-                        <i class="bi bi-graph-up me-2"></i>
-                        <span class="d-none d-sm-inline">Финансовый дашборд</span>
-                        <span class="d-sm-none">Финансы</span>
+                        <i class="bi bi-graph-up me-1"></i>
+                        <span class="d-none d-lg-inline">Финансовый дашборд</span>
+                        <span class="d-lg-none">Финансы</span>
                     </a>
                 </div>
             </div>
 
-            <!-- Статистика -->
-            <div class="row mb-4">
-                <div class="col-md-3">
-                    <div class="card bg-primary text-white">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between">
+            <!-- Статистика с адаптивной сеткой -->
+            <div class="row mb-4 g-3">
+                <div class="col-6 col-md-3">
+                    <div class="card card-gradient shadow-blue">
+                        <div class="card-body p-3">
+                            <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h6 class="card-title">Всего сотрудников</h6>
-                                    <h3>{{ $stats['total'] }}</h3>
+                                    <h6 class="card-title mb-1 fs-6">Всего</h6>
+                                    <h3 class="mb-0">{{ $stats['total'] }}</h3>
                                 </div>
-                                <i class="bi bi-people fs-1 opacity-50"></i>
+                                <i class="bi bi-people fs-2 opacity-75"></i>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="card bg-success ">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between">
+                <div class="col-6 col-md-3">
+                    <div class="card bg-success text-white shadow-blue">
+                        <div class="card-body p-3">
+                            <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h6 class="card-title">Активных</h6>
-                                    <h3>{{ $stats['active'] }}</h3>
+                                    <h6 class="card-title mb-1 fs-6">Активных</h6>
+                                    <h3 class="mb-0">{{ $stats['active'] }}</h3>
                                 </div>
-                                <i class="bi bi-person-check fs-1 opacity-50"></i>
+                                <i class="bi bi-person-check fs-2 opacity-75"></i>
                             </div>
                         </div>
                     </div>

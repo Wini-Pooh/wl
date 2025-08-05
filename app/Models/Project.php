@@ -77,6 +77,11 @@ class Project extends Model
     {
         return $this->belongsTo(User::class, 'partner_id');
     }
+    
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'partner_id');
+    }
 
     public function works()
     {
@@ -126,6 +131,18 @@ class Project extends Model
     public function estimates()
     {
         return $this->hasMany(Estimate::class);
+    }
+
+    public function finances()
+    {
+        return $this->hasMany(ProjectFinance::class);
+    }
+
+    public function employees()
+    {
+        return $this->belongsToMany(Employee::class, 'employee_projects')
+                    ->withPivot('role_in_project', 'responsibilities', 'start_date', 'end_date', 'status')
+                    ->withTimestamps();
     }
 
     public function basicWorks()

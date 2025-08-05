@@ -4,13 +4,23 @@ namespace App\Http\Controllers\Partner;
 
 use App\Http\Controllers\Controller;
 use App\Models\Project;
+use App\Models\ProjectPhoto;
+use App\Models\Employee;
+use App\Models\User;
+use App\Helpers\ProjectAccessHelper;
+use App\Traits\HasSubscriptionLimits;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Carbon\Carbon;
 
 class ProjectController extends Controller
 {
+    use HasSubscriptionLimits;
+    
     public function __construct()
     {
         // Доступ к проектам для партнеров, сотрудников, прорабов, клиентов и админов
@@ -26,174 +36,70 @@ class ProjectController extends Controller
      */
     private function checkProjectAccess(Project $project)
     {
+        /** @var User $user */
         $user = Auth::user();
-        
-        if ($user->hasRole('admin')) {
-            return true;
-        }
-        
-        if ($user->hasRole('partner')) {
-            return $project->partner_id === $user->id;
-        }
-        
-        if (($user->hasRole('employee') || $user->hasRole('foreman')) && isset($user->employeeProfile)) {
-            return $project->partner_id === $user->employeeProfile->partner_id;
-        }
-        
-        // Проверка доступа для клиентов по номеру телефона
-        if ($user->hasRole('client')) {
-            $userPhone = $user->phone ?? $user->email;
-            if ($userPhone) {
-                $userPhoneClean = preg_replace('/[^0-9]/', '', $userPhone);
-                $projectPhoneClean = preg_replace('/[^0-9]/', '', $project->client_phone);
-                return $userPhoneClean === $projectPhoneClean;
-            }
-        }
-        
-        return false;
+        return ProjectAccessHelper::canAccessProject($user, $project);
     }
 
     /**
-     * Display a listing of the resource.
+     * Отображение списка проектов
      */
     public function index(Request $request)
     {
-        $query = Project::with('partner');
-        
-        // Фильтрация по партнеру
+        /** @var User $user */
         $user = Auth::user();
-        if (!$user->isAdmin()) {
-            if ($user->isPartner()) {
-                $query->forPartner($user->getKey());
-            } elseif (($user->isEmployee() || $user->isForeman()) && isset($user->employeeProfile)) {
-                // Сотрудник и прораб видят проекты своего партнера
-                $query->forPartner($user->employeeProfile->partner_id);
-            } elseif ($user->isClient()) {
-                // Клиент видит только свои проекты
-                $userPhone = $user->phone ?? $user->email;
-                if ($userPhone) {
-                    // Очищаем номер телефона пользователя от символов
-                    $userPhoneClean = preg_replace('/[^0-9]/', '', $userPhone);
-                    
-                    // Используем SQL-функции, которые работают в старых версиях MySQL
-                    $query->whereRaw("REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(client_phone, ' ', ''), '(', ''), ')', ''), '-', ''), '+', '') LIKE ?", ['%' . $userPhoneClean . '%']);
-                } else {
-                    // Если у клиента нет номера телефона, показываем пустой результат
-                    $query->where('id', -1);
-                }
-            } else {
-                // Если нет подходящей роли, показываем пустой результат
-                $query->where('id', -1);
-            }
+        
+        // Получаем проекты в зависимости от роли пользователя
+        $projectsQuery = Project::query();
+        
+        if ($user->hasRole('admin')) {
+            // Админ видит все проекты
+            $projectsQuery = Project::with(['partner']);
+        } elseif ($user->hasRole('partner')) {
+            // Партнер видит только свои проекты
+            $projectsQuery = $user->projects()->with(['partner']);
+        } elseif ($user->hasRole('employee') || $user->hasRole('foreman')) {
+            // Сотрудники и прорабы видят проекты, к которым имеют доступ
+            $projectsQuery = $user->assignedProjects()->with(['partner']);
+        } elseif ($user->hasRole('client')) {
+            // Клиенты видят только проекты, где они указаны как клиенты (по телефону)
+            $projectsQuery = Project::where('client_phone', $user->phone)->with(['partner']);
         }
         
-        // Поиск по телефону клиента
-        if ($request->filled('phone')) {
-            $query->byClientPhone($request->input('phone'));
-        }
-        
-        // Фильтр по статусу
-        if ($request->filled('status')) {
-            $query->where('project_status', $request->input('status'));
-        }
-        
-        // Фильтр по типу объекта
-        if ($request->filled('object_type')) {
-            $query->where('object_type', $request->input('object_type'));
-        }
-        
-        // Поиск по имени клиента
-        if ($request->filled('search')) {
-            $search = $request->input('search');
-            $query->where(function($q) use ($search) {
-                $q->where('client_first_name', 'like', "%{$search}%")
-                  ->orWhere('client_last_name', 'like', "%{$search}%")
-                  ->orWhere('object_city', 'like', "%{$search}%")
-                  ->orWhere('object_street', 'like', "%{$search}%");
+        // Фильтрация по поисковому запросу
+        if ($request->has('search') && !empty($request->search)) {
+            $search = $request->search;
+            $projectsQuery->where(function($query) use ($search) {
+                $query->where('client_first_name', 'like', "%{$search}%")
+                      ->orWhere('client_last_name', 'like', "%{$search}%")
+                      ->orWhere('client_phone', 'like', "%{$search}%")
+                      ->orWhere('object_city', 'like', "%{$search}%")
+                      ->orWhere('object_street', 'like', "%{$search}%");
             });
         }
         
-        // Определяем количество элементов на странице в зависимости от режима просмотра
-        $viewMode = $request->get('view_mode', 'list');
-        $perPage = $viewMode === 'cards' ? 6 : 8;
+        // Фильтрация по статусу
+        if ($request->has('status') && !empty($request->status)) {
+            $projectsQuery->where('project_status', $request->status);
+        }
         
-        // Логирование для отладки
-        \Log::info('Projects index - View mode: ' . $viewMode . ', Per page: ' . $perPage);
+        // Сортировка
+        $sortBy = $request->get('sort_by', 'created_at');
+        $sortDirection = $request->get('sort_direction', 'desc');
         
-        $projects = $query->orderBy('created_at', 'desc')->paginate($perPage);
+        $allowedSortFields = ['created_at', 'updated_at', 'client_first_name', 'project_status', 'start_date', 'end_date'];
+        if (in_array($sortBy, $allowedSortFields)) {
+            $projectsQuery->orderBy($sortBy, $sortDirection);
+        }
         
-        return view('partner.projects.index', compact('projects', 'viewMode'));
+        // Пагинация
+        $projects = $projectsQuery->paginate(12);
+        
+        return view('partner.projects.index', compact('projects'));
     }
 
     /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        return view('partner.projects.create');
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            // Обязательные поля
-            'client_first_name' => 'required|string|max:255',
-            'client_last_name' => 'required|string|max:255',
-            'client_phone' => 'required|string|max:20',
-            'object_type' => ['required', Rule::in(array_keys(Project::getObjectTypes()))],
-            'work_type' => ['required', Rule::in(array_keys(Project::getWorkTypes()))],
-            'project_status' => ['required', Rule::in(array_keys(Project::getStatuses()))],
-            
-            // Паспортные данные
-            'passport_series' => 'nullable|string|max:10',
-            'passport_number' => 'nullable|string|max:20',
-            'passport_issued_by' => 'nullable|string|max:500',
-            'passport_issued_date' => 'nullable|date',
-            'passport_department_code' => 'nullable|string|max:10',
-            
-            // Личные данные
-            'birth_date' => 'nullable|date',
-            'birth_place' => 'nullable|string|max:255',
-            'client_email' => 'nullable|email|max:255',
-            
-            // Адрес прописки
-            'registration_postal_code' => 'nullable|string|max:10',
-            'registration_city' => 'nullable|string|max:255',
-            'registration_street' => 'nullable|string|max:255',
-            'registration_house' => 'nullable|string|max:20',
-            'registration_apartment' => 'nullable|string|max:20',
-            
-            // Характеристики объекта
-            'apartment_number' => 'nullable|string|max:20',
-            'object_city' => 'nullable|string|max:255',
-            'object_street' => 'nullable|string|max:255',
-            'object_house' => 'nullable|string|max:20',
-            'object_entrance' => 'nullable|string|max:20',
-            'object_area' => 'nullable|numeric|min:0',
-            'camera_link' => 'nullable|url|max:500',
-            
-            // Финансовые показатели исключены - обновляются только через сметы
-            
-            // Временные рамки
-            'contract_date' => 'nullable|date',
-            'work_start_date' => 'nullable|date',
-            'estimated_end_date' => 'nullable|date',
-            'contract_number' => 'nullable|string|max:100',
-        ]);
-        
-        $validated['partner_id'] = Auth::id();
-        
-        $project = Project::create($validated);
-        
-        return redirect()->route('partner.projects.show', $project)
-                        ->with('success', 'Проект успешно создан!');
-    }
-
-    /**
-     * Display the specified resource.
+     * Показать конкретный проект (перенаправляет на главную страницу проекта)
      */
     public function show(Request $request, Project $project)
     {
@@ -202,185 +108,804 @@ class ProjectController extends Controller
             abort(403, 'Нет доступа к этому проекту');
         }
         
-        // Загружаем связанные данные для финансов и расписания
+        // По умолчанию показываем главную страницу проекта
+        return redirect()->route('partner.projects.main', $project);
+    }
+
+    /**
+     * Показать финансовую информацию проекта
+     */
+    public function showFinance(Request $request, Project $project)
+    {
+        // Проверка доступа
+        if (!$this->checkProjectAccess($project)) {
+            abort(403, 'Нет доступа к этому проекту');
+        }
+        
         $project->load([
-            'basicWorks',
-            'additionalWorks', 
-            'basicMaterials',
-            'additionalMaterials',
-            'transports',
+            'works',
+            'materials',
+            'transports'
+        ]);
+        
+        return view('partner.projects.pages.finance', compact('project'));
+    }
+
+    /**
+     * Показать расписание проекта
+     */
+    public function showSchedule(Request $request, Project $project)
+    {
+        // Проверка доступа
+        if (!$this->checkProjectAccess($project)) {
+            abort(403, 'Нет доступа к этому проекту');
+        }
+        
+        $project->load([
             'stages',
             'events'
         ]);
-
-        // Подготовка данных для вкладок (пустые массивы - реальные данные будут из БД)
-        $documents = [];
-        $photos = [];
-        $designFiles = [];
-        $schemes = [];
-
-        // Если это AJAX запрос для конкретной вкладки
-        if ($request->ajax() && $request->has('tab')) {
-            $tab = $request->get('tab');
-            
-            try {
-                $view = "partner.projects.tabs.{$tab}";
-                $html = view($view, compact('project', 'documents', 'photos', 'designFiles', 'schemes'))->render();
-                
-                return response()->json([
-                    'success' => true,
-                    'html' => $html
-                ]);
-            } catch (\Exception $e) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Ошибка загрузки вкладки'
-                ], 500);
-            }
-        }
         
-        return view('partner.projects.show', compact('project', 'documents', 'photos', 'designFiles', 'schemes'));
+        return view('partner.projects.pages.schedule', compact('project'));
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Показать главную страницу проекта
      */
-    public function edit(Project $project)
+    public function showMain(Request $request, Project $project)
     {
         // Проверка доступа
         if (!$this->checkProjectAccess($project)) {
             abort(403, 'Нет доступа к этому проекту');
         }
         
-        return view('partner.projects.edit', compact('project'));
+        $project->load([
+            'stages',
+            'events',
+            'works',
+            'materials',
+            'employees'
+        ]);
+        
+        return view('partner.projects.pages.main', compact('project'));
     }
 
     /**
-     * Update the specified resource in storage.
+     * Показать фотографии проекта (без AJAX)
      */
-    public function update(Request $request, Project $project)
+    public function showPhotos(Request $request, Project $project)
     {
         // Проверка доступа
         if (!$this->checkProjectAccess($project)) {
             abort(403, 'Нет доступа к этому проекту');
         }
         
-        $validated = $request->validate([
-            // Обязательные поля
-            'client_first_name' => 'required|string|max:255',
-            'client_last_name' => 'required|string|max:255',
-            'client_phone' => 'required|string|max:20',
-            'object_type' => ['required', Rule::in(array_keys(Project::getObjectTypes()))],
-            'work_type' => ['required', Rule::in(array_keys(Project::getWorkTypes()))],
-            'project_status' => ['required', Rule::in(array_keys(Project::getStatuses()))],
-            
-            // Паспортные данные
-            'passport_series' => 'nullable|string|max:10',
-            'passport_number' => 'nullable|string|max:20',
-            'passport_issued_by' => 'nullable|string|max:500',
-            'passport_issued_date' => 'nullable|date',
-            'passport_department_code' => 'nullable|string|max:10',
-            
-            // Личные данные
-            'birth_date' => 'nullable|date',
-            'birth_place' => 'nullable|string|max:255',
-            'client_email' => 'nullable|email|max:255',
-            
-            // Адрес прописки
-            'registration_postal_code' => 'nullable|string|max:10',
-            'registration_city' => 'nullable|string|max:255',
-            'registration_street' => 'nullable|string|max:255',
-            'registration_house' => 'nullable|string|max:20',
-            'registration_apartment' => 'nullable|string|max:20',
-            
-            // Характеристики объекта
-            'apartment_number' => 'nullable|string|max:20',
-            'object_city' => 'nullable|string|max:255',
-            'object_street' => 'nullable|string|max:255',
-            'object_house' => 'nullable|string|max:20',
-            'object_entrance' => 'nullable|string|max:20',
-            'object_area' => 'nullable|numeric|min:0',
-            'camera_link' => 'nullable|url|max:500',
-            
-            // Финансовые показатели исключены из валидации
-            // Они обновляются автоматически из смет
-            
-            // Временные рамки
-            'contract_date' => 'nullable|date',
-            'work_start_date' => 'nullable|date',
-            'estimated_end_date' => 'nullable|date',
-            'contract_number' => 'nullable|string|max:100',
-        ]);
-        
-        $project->update($validated);
-        
-        return redirect()->route('partner.projects.show', $project)
-                        ->with('success', 'Проект успешно обновлен!');
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Project $project)
-    {
-        // Проверка доступа
-        if (!Auth::user()->hasRole('admin') && $project->partner_id !== Auth::id()) {
-            abort(403);
-        }
-        
-        $project->delete();
-        
-        return redirect()->route('partner.projects.index')
-                        ->with('success', 'Проект успешно удален!');
-    }
-
-    /**
-     * Поиск проектов по номеру телефона
-     */
-    public function searchByPhone(Request $request)
-    {
-        $request->validate([
-            'phone' => 'required|string'
-        ]);
-        
-        $query = Project::byClientPhone($request->phone);
-        
-        // Фильтрация по партнеру (только свои проекты, кроме админа)
-        if (!Auth::user()->hasRole('admin')) {
-            $query->forPartner(Auth::id());
-        }
-        
-        $projects = $query->get();
-        
-        return response()->json($projects);
-    }
-    
-    /**
-     * Временный метод для тестирования кнопок
-     */
-    public function testButtons(Project $project)
-    {
-        $user = Auth::user();
-        
-        $buttonTest = [
-            'user_id' => $user->id,
-            'user_name' => $user->name,
-            'user_roles' => $user->roles->pluck('name')->toArray(),
-            'default_role' => $user->defaultRole ? $user->defaultRole->name : null,
-            'isAdmin' => $user->isAdmin(),
-            'isPartner' => $user->isPartner(),
-            'isEmployee' => $user->isEmployee(),
-            'isForeman' => $user->isForeman(),
-            'isEstimator' => $user->isEstimator(),
-            'isClient' => $user->isClient(),
-            'hasRole_admin' => $user->hasRole('admin'),
-            'hasRole_partner' => $user->hasRole('partner'),
-            'hasRole_employee' => $user->hasRole('employee'),
-            'hasRole_foreman' => $user->hasRole('foreman'),
-            'hasRole_estimator' => $user->hasRole('estimator'),
-            'canSeeActionButtons' => \App\Helpers\UserRoleHelper::canSeeActionButtons(),
+        // Получаем фильтры из запроса
+        $filters = [
+            'category' => $request->get('category'),
+            'location' => $request->get('location'),
+            'search' => $request->get('search'),
+            'sort' => $request->get('sort', 'newest')
         ];
         
-        return response()->json($buttonTest);
+        // Строим запрос с фильтрами
+        $query = $project->photos();
+        
+        // Применяем фильтры
+        if (!empty($filters['category'])) {
+            $query->where('category', $filters['category']);
+        }
+        
+        if (!empty($filters['location'])) {
+            $query->where('location', $filters['location']);
+        }
+        
+        if (!empty($filters['search'])) {
+            $query->where(function($q) use ($filters) {
+                $q->where('original_name', 'LIKE', '%' . $filters['search'] . '%')
+                  ->orWhere('filename', 'LIKE', '%' . $filters['search'] . '%')
+                  ->orWhere('comment', 'LIKE', '%' . $filters['search'] . '%');
+            });
+        }
+        
+        // Применяем сортировку
+        switch ($filters['sort']) {
+            case 'oldest':
+                $query->orderBy('created_at', 'asc');
+                break;
+            case 'name_asc':
+                $query->orderBy('original_name', 'asc');
+                break;
+            case 'name_desc':
+                $query->orderBy('original_name', 'desc');
+                break;
+            case 'size_asc':
+                $query->orderBy('file_size', 'asc');
+                break;
+            case 'size_desc':
+                $query->orderBy('file_size', 'desc');
+                break;
+            default: // newest
+                $query->orderBy('created_at', 'desc');
+                break;
+        }
+        
+        // Используем пагинацию
+        $photos = $query->paginate(20)->appends($request->query());
+        
+        // Получаем уникальные категории и локации для фильтров
+        // Исправляем ошибку с DISTINCT и ORDER BY - используем getQuery() чтобы обойти orderBy в связи
+        $categories = ProjectPhoto::where('project_id', $project->id)
+            ->whereNotNull('category')
+            ->distinct()
+            ->pluck('category')
+            ->sort()
+            ->values()
+            ->toArray();
+            
+        $locations = ProjectPhoto::where('project_id', $project->id)
+            ->whereNotNull('location')
+            ->distinct()
+            ->pluck('location')
+            ->sort()
+            ->values()
+            ->toArray();
+        
+        // Предустановленные опции для фильтров
+        $categoryOptions = [
+            'before' => 'До ремонта',
+            'after' => 'После ремонта',
+            'process' => 'Процесс работы',
+            'progress' => 'Ход работ',
+            'materials' => 'Материалы',
+            'problems' => 'Проблемы',
+            'design' => 'Дизайн',
+            'furniture' => 'Мебель',
+            'decor' => 'Декор',
+            'demolition' => 'Демонтаж',
+            'floors' => 'Полы',
+            'walls' => 'Стены',
+            'ceiling' => 'Потолок',
+            'electrical' => 'Электрика',
+            'plumbing' => 'Сантехника',
+            'heating' => 'Отопление',
+            'doors' => 'Двери',
+            'windows' => 'Окна'
+        ];
+        
+        $locationOptions = [
+            'living_room' => 'Гостиная',
+            'kitchen' => 'Кухня',
+            'bedroom' => 'Спальня',
+            'bathroom' => 'Ванная',
+            'toilet' => 'Туалет',
+            'hallway' => 'Прихожая',
+            'balcony' => 'Балкон',
+            'storage' => 'Кладовка',
+            'office' => 'Кабинет',
+            'garage' => 'Гараж',
+            'basement' => 'Подвал',
+            'attic' => 'Чердак',
+            'exterior' => 'Фасад'
+        ];
+        
+        $sortOptions = [
+            'newest' => 'Сначала новые',
+            'oldest' => 'Сначала старые', 
+            'name_asc' => 'По имени (А-Я)',
+            'name_desc' => 'По имени (Я-А)',
+            'size_asc' => 'По размеру (меньше)',
+            'size_desc' => 'По размеру (больше)'
+        ];
+        
+        return view('partner.projects.pages.photos-standard', compact(
+            'project', 
+            'photos', 
+            'filters', 
+            'categories', 
+            'locations',
+            'categoryOptions',
+            'locationOptions', 
+            'sortOptions'
+        ));
+    }
+
+    /**
+     * Показать дизайн проекта
+     */
+    public function showDesign(Request $request, Project $project)
+    {
+        // Проверка доступа
+        if (!$this->checkProjectAccess($project)) {
+            abort(403, 'Нет доступа к этому проекту');
+        }
+        
+        // Получаем фильтры из запроса
+        $filters = [
+            'search' => $request->get('search'),
+            'design_type' => $request->get('design_type'),
+            'room' => $request->get('room'),
+            'style' => $request->get('style'),
+            'sort' => $request->get('sort', 'newest')
+        ];
+        
+        // Строим запрос с фильтрами
+        $query = $project->designFiles();
+        
+        // Применяем фильтры
+        if (!empty($filters['search'])) {
+            $query->where(function($q) use ($filters) {
+                $q->where('name', 'LIKE', '%' . $filters['search'] . '%')
+                  ->orWhere('original_name', 'LIKE', '%' . $filters['search'] . '%');
+            });
+        }
+        
+        if (!empty($filters['design_type'])) {
+            $query->where('design_type', $filters['design_type']);
+        }
+        
+        if (!empty($filters['room'])) {
+            $query->where('room', $filters['room']);
+        }
+        
+        if (!empty($filters['style'])) {
+            $query->where('style', $filters['style']);
+        }
+        
+        // Применяем сортировку
+        switch ($filters['sort']) {
+            case 'oldest':
+                $query->orderBy('created_at', 'asc');
+                break;
+            case 'name_asc':
+                $query->orderBy('original_name', 'asc');
+                break;
+            case 'name_desc':
+                $query->orderBy('original_name', 'desc');
+                break;
+            case 'size_asc':
+                $query->orderBy('file_size', 'asc');
+                break;
+            case 'size_desc':
+                $query->orderBy('file_size', 'desc');
+                break;
+            default: // newest
+                $query->orderBy('created_at', 'desc');
+                break;
+        }
+        
+        // Используем пагинацию
+        $designFiles = $query->paginate(12)->appends($request->query());
+        
+        // Опции для select'ов
+        $designTypeOptions = [
+            '3d' => '3D визуализация',
+            'layout' => 'Планировка',
+            'sketch' => 'Эскиз',
+            'render' => 'Рендер',
+            'draft' => 'Черновик',
+            'concept' => 'Концепт',
+            'mood_board' => 'Мудборд',
+            'color_scheme' => 'Цветовая схема',
+            'furniture' => 'Мебель',
+            'lighting' => 'Освещение',
+            'materials' => 'Материалы',
+            'final' => 'Финальный дизайн',
+        ];
+        
+        $roomOptions = [
+            'kitchen' => 'Кухня',
+            'living_room' => 'Гостиная',
+            'bedroom' => 'Спальня',
+            'bathroom' => 'Ванная',
+            'toilet' => 'Туалет',
+            'hallway' => 'Прихожая',
+            'balcony' => 'Балкон',
+            'corridor' => 'Коридор',
+            'office' => 'Кабинет',
+            'children' => 'Детская',
+            'pantry' => 'Кладовая',
+            'garage' => 'Гараж',
+            'basement' => 'Подвал',
+            'attic' => 'Чердак',
+            'terrace' => 'Терраса',
+            'general' => 'Общий план',
+        ];
+        
+        $styleOptions = [
+            'modern' => 'Современный',
+            'classic' => 'Классический',
+            'minimalism' => 'Минимализм',
+            'loft' => 'Лофт',
+            'scandinavian' => 'Скандинавский',
+            'provence' => 'Прованс',
+            'high_tech' => 'Хай-тек',
+            'eco' => 'Эко',
+            'art_deco' => 'Арт-деко',
+            'neoclassic' => 'Неоклассика',
+            'fusion' => 'Фьюжн',
+            'industrial' => 'Индустриальный',
+        ];
+        
+        $sortOptions = [
+            'newest' => 'Сначала новые',
+            'oldest' => 'Сначала старые',
+            'name_asc' => 'По названию (А-Я)',
+            'name_desc' => 'По названию (Я-А)',
+            'size_asc' => 'По размеру (возрастание)',
+            'size_desc' => 'По размеру (убывание)',
+        ];
+        
+        return view('partner.projects.pages.design-standard', compact(
+            'project', 
+            'designFiles', 
+            'filters',
+            'designTypeOptions',
+            'roomOptions',
+            'styleOptions',
+            'sortOptions'
+        ));
+    }
+
+    /**
+     * Показать конкретный файл дизайна
+     */
+    public function showDesignFile(Project $project, $fileId)
+    {
+        // Проверка доступа
+        if (!$this->checkProjectAccess($project)) {
+            abort(403, 'Нет доступа к этому проекту');
+        }
+
+        $designFile = $project->designFiles()->with('uploader')->findOrFail($fileId);
+
+        return view('partner.projects.pages.design-view', compact('project', 'designFile'));
+    }
+
+    /**
+     * Показать схемы проекта
+     */
+    public function showSchemes(Request $request, Project $project)
+    {
+        // Проверка доступа
+        if (!$this->checkProjectAccess($project)) {
+            abort(403, 'Нет доступа к этому проекту');
+        }
+        
+        // Получаем фильтры из запроса
+        $filters = [
+            'search' => $request->get('search'),
+            'scheme_type' => $request->get('scheme_type'),
+            'room' => $request->get('room'),
+            'sort' => $request->get('sort', 'created_at_desc')
+        ];
+        
+        // Строим запрос с фильтрами
+        $query = $project->schemes();
+        
+        // Применяем фильтры
+        if (!empty($filters['search'])) {
+            $query->where(function($q) use ($filters) {
+                $q->where('name', 'LIKE', '%' . $filters['search'] . '%')
+                  ->orWhere('original_name', 'LIKE', '%' . $filters['search'] . '%');
+            });
+        }
+        
+        if (!empty($filters['scheme_type'])) {
+            $query->where('scheme_type', $filters['scheme_type']);
+        }
+        
+        if (!empty($filters['room'])) {
+            $query->where('room', $filters['room']);
+        }
+        
+        // Применяем сортировку
+        switch ($filters['sort']) {
+            case 'created_at_asc':
+                $query->orderBy('created_at', 'asc');
+                break;
+            case 'name_asc':
+                $query->orderBy('original_name', 'asc');
+                break;
+            case 'name_desc':
+                $query->orderBy('original_name', 'desc');
+                break;
+            case 'size_asc':
+                $query->orderBy('file_size', 'asc');
+                break;
+            case 'size_desc':
+                $query->orderBy('file_size', 'desc');
+                break;
+            default: // created_at_desc
+                $query->orderBy('created_at', 'desc');
+                break;
+        }
+        
+        // Используем пагинацию
+        $schemes = $query->paginate(12)->appends($request->query());
+        
+        // Опции для select'ов
+        $schemeTypeOptions = [
+            'electrical' => 'Электрика',
+            'plumbing' => 'Сантехника',
+            'ventilation' => 'Вентиляция',
+            'layout' => 'Планировка',
+            'structure' => 'Конструкция',
+            'technical' => 'Техническая схема',
+            'construction' => 'Строительный чертеж',
+            'other' => 'Другое',
+        ];
+        
+        $roomOptions = [
+            'kitchen' => 'Кухня',
+            'living_room' => 'Гостиная',
+            'bedroom' => 'Спальня',
+            'bathroom' => 'Ванная',
+            'hallway' => 'Прихожая',
+            'general' => 'Общий план',
+            'other' => 'Другое',
+        ];
+        
+        $sortOptions = [
+            'created_at_desc' => 'Сначала новые',
+            'created_at_asc' => 'Сначала старые',
+            'name_asc' => 'По названию (А-Я)',
+            'name_desc' => 'По названию (Я-А)',
+            'size_asc' => 'По размеру (возрастание)',
+            'size_desc' => 'По размеру (убывание)',
+        ];
+        
+        return view('partner.projects.pages.schemes', compact(
+            'project', 
+            'schemes', 
+            'filters',
+            'schemeTypeOptions',
+            'roomOptions',
+            'sortOptions'
+        ));
+    }
+
+    /**
+     * Загрузить схемы проекта
+     */
+    public function uploadSchemes(Request $request, Project $project)
+    {
+        // Проверка доступа
+        if (!$this->checkProjectAccess($project)) {
+            abort(403, 'Нет доступа к этому проекту');
+        }
+
+        $request->validate([
+            'schemes' => 'required|array',
+            'schemes.*' => 'file|mimes:jpeg,png,gif,webp,svg,pdf,dwg,dxf,ai|max:51200', // 50MB
+            'scheme_type' => 'nullable|string|max:50',
+            'room' => 'nullable|string|max:50',
+            'description' => 'nullable|string|max:1000',
+        ]);
+
+        $uploadedCount = 0;
+        $errors = [];
+
+        foreach ($request->file('schemes') as $file) {
+            try {
+                // Генерируем уникальное имя файла
+                $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                
+                // Путь для сохранения
+                $directory = "projects/{$project->id}/schemes";
+                $filePath = $directory . '/' . $fileName;
+                
+                // Сохраняем файл
+                $file->storeAs($directory, $fileName, 'public');
+                
+                // Создаем запись в БД
+                $project->schemes()->create([
+                    'name' => $fileName,
+                    'original_name' => $file->getClientOriginalName(),
+                    'file_path' => $filePath,
+                    'file_size' => $file->getSize(),
+                    'mime_type' => $file->getMimeType(),
+                    'scheme_type' => $request->get('scheme_type', 'technical'),
+                    'room' => $request->get('room'),
+                    'description' => $request->get('description'),
+                    'uploaded_by' => auth()->id(),
+                ]);
+                
+                $uploadedCount++;
+            } catch (\Exception $e) {
+                $errors[] = "Ошибка загрузки файла {$file->getClientOriginalName()}: " . $e->getMessage();
+            }
+        }
+
+        if ($uploadedCount > 0) {
+            $message = "Успешно загружено схем: {$uploadedCount}";
+            if (!empty($errors)) {
+                $message .= ". Ошибки: " . implode('; ', $errors);
+            }
+            return redirect()->route('partner.projects.schemes', $project)->with('success', $message);
+        } else {
+            return redirect()->route('partner.projects.schemes', $project)->with('error', 'Не удалось загрузить ни одной схемы. ' . implode('; ', $errors));
+        }
+    }
+
+    /**
+     * Удалить схему проекта
+     */
+    public function deleteScheme(Project $project, $schemeId)
+    {
+        // Проверка доступа
+        if (!$this->checkProjectAccess($project)) {
+            abort(403, 'Нет доступа к этому проекту');
+        }
+
+        try {
+            $scheme = $project->schemes()->findOrFail($schemeId);
+            
+            // Удаляем файл из хранилища
+            if (Storage::disk('public')->exists($scheme->file_path)) {
+                Storage::disk('public')->delete($scheme->file_path);
+            }
+            
+            // Удаляем запись из БД
+            $scheme->delete();
+            
+            return redirect()->route('partner.projects.schemes', $project)->with('success', 'Схема успешно удалена');
+        } catch (\Exception $e) {
+            return redirect()->route('partner.projects.schemes', $project)->with('error', 'Ошибка при удалении схемы: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Скачать схему проекта
+     */
+    public function downloadScheme(Project $project, $schemeId)
+    {
+        // Проверка доступа
+        if (!$this->checkProjectAccess($project)) {
+            abort(403, 'Нет доступа к этому проекту');
+        }
+
+        try {
+            $scheme = $project->schemes()->findOrFail($schemeId);
+            
+            if (!Storage::disk('public')->exists($scheme->file_path)) {
+                return redirect()->route('partner.projects.schemes', $project)->with('error', 'Файл не найден');
+            }
+            
+            $fileContent = Storage::disk('public')->get($scheme->file_path);
+            return response($fileContent, 200, [
+                'Content-Type' => $scheme->mime_type,
+                'Content-Disposition' => 'attachment; filename="' . $scheme->original_name . '"'
+            ]);
+        } catch (\Exception $e) {
+            return redirect()->route('partner.projects.schemes', $project)->with('error', 'Ошибка при скачивании схемы: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Показать документы проекта
+     */
+    public function showDocuments(Request $request, Project $project)
+    {
+        // Проверка доступа
+        if (!$this->checkProjectAccess($project)) {
+            abort(403, 'Нет доступа к этому проекту');
+        }
+        
+        // Получаем фильтры из запроса
+        $filters = [
+            'search' => $request->get('search'),
+            'document_type' => $request->get('document_type'),
+            'status' => $request->get('status'),
+            'date_from' => $request->get('date_from'),
+            'date_to' => $request->get('date_to'),
+            'sort' => $request->get('sort', 'created_at_desc')
+        ];
+        
+        // Строим запрос с фильтрами
+        $query = $project->documents();
+        
+        // Применяем фильтры
+        if (!empty($filters['search'])) {
+            $query->where(function($q) use ($filters) {
+                $q->where('name', 'LIKE', '%' . $filters['search'] . '%')
+                  ->orWhere('original_name', 'LIKE', '%' . $filters['search'] . '%');
+            });
+        }
+        
+        if (!empty($filters['document_type'])) {
+            $query->where('document_type', $filters['document_type']);
+        }
+        
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+        
+        if (!empty($filters['date_from'])) {
+            $query->whereDate('created_at', '>=', $filters['date_from']);
+        }
+        
+        if (!empty($filters['date_to'])) {
+            $query->whereDate('created_at', '<=', $filters['date_to']);
+        }
+        
+        // Применяем сортировку
+        switch ($filters['sort']) {
+            case 'created_at_asc':
+                $query->orderBy('created_at', 'asc');
+                break;
+            case 'name_asc':
+                $query->orderBy('original_name', 'asc');
+                break;
+            case 'name_desc':
+                $query->orderBy('original_name', 'desc');
+                break;
+            case 'size_asc':
+                $query->orderBy('file_size', 'asc');
+                break;
+            case 'size_desc':
+                $query->orderBy('file_size', 'desc');
+                break;
+            default: // created_at_desc
+                $query->orderBy('created_at', 'desc');
+                break;
+        }
+        
+        // Используем пагинацию
+        $documents = $query->paginate(12)->appends($request->query());
+        
+        // Опции для select'ов
+        $documentTypeOptions = [
+            'contract' => 'Договор',
+            'invoice' => 'Счет',
+            'report' => 'Отчет',
+            'specification' => 'Спецификация',
+            'technical' => 'Техническая документация',
+            'permit' => 'Разрешение',
+            'certificate' => 'Сертификат',
+            'other' => 'Другое',
+        ];
+        
+        $statusOptions = [
+            'active' => 'Активный',
+            'draft' => 'Черновик',
+            'archived' => 'Архивный',
+            'signed' => 'Подписан',
+        ];
+        
+        $sortOptions = [
+            'created_at_desc' => 'Сначала новые',
+            'created_at_asc' => 'Сначала старые',
+            'name_asc' => 'По названию (А-Я)',
+            'name_desc' => 'По названию (Я-А)',
+            'size_asc' => 'По размеру (возрастание)',
+            'size_desc' => 'По размеру (убывание)',
+        ];
+        
+        return view('partner.projects.pages.documents', compact(
+            'project', 
+            'documents', 
+            'filters',
+            'documentTypeOptions',
+            'statusOptions',
+            'sortOptions'
+        ));
+    }
+
+    /**
+     * Загрузить документы проекта
+     */
+    public function uploadDocuments(Request $request, Project $project)
+    {
+        // Проверка доступа
+        if (!$this->checkProjectAccess($project)) {
+            abort(403, 'Нет доступа к этому проекту');
+        }
+
+        $request->validate([
+            'documents' => 'required|array',
+            'documents.*' => 'file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,txt,rtf,zip,rar,7z,jpg,jpeg,png,gif,webp,svg|max:51200', // 50MB
+            'document_type' => 'nullable|string|max:50',
+            'status' => 'nullable|string|in:active,draft,archived',
+            'description' => 'nullable|string|max:1000',
+        ]);
+
+        $uploadedCount = 0;
+        $errors = [];
+
+        foreach ($request->file('documents') as $file) {
+            try {
+                // Генерируем уникальное имя файла
+                $fileName = Str::uuid() . '.' . $file->getClientOriginalExtension();
+                $filePath = "projects/{$project->id}/documents/{$fileName}";
+                
+                // Загружаем файл
+                Storage::disk('public')->put($filePath, file_get_contents($file));
+                
+                // Создаем запись в БД
+                $project->documents()->create([
+                    'name' => $fileName,
+                    'original_name' => $file->getClientOriginalName(),
+                    'file_path' => $filePath,
+                    'file_size' => $file->getSize(),
+                    'mime_type' => $file->getMimeType(),
+                    'document_type' => $request->get('document_type', 'other'),
+                    'status' => $request->get('status', 'active'),
+                    'description' => $request->get('description'),
+                    'uploaded_by' => auth()->id(),
+                ]);
+                
+                $uploadedCount++;
+            } catch (\Exception $e) {
+                $errors[] = "Ошибка загрузки файла {$file->getClientOriginalName()}: " . $e->getMessage();
+            }
+        }
+
+        if ($uploadedCount > 0) {
+            $message = "Успешно загружено документов: {$uploadedCount}";
+            if (!empty($errors)) {
+                $message .= ". Ошибки: " . implode('; ', $errors);
+            }
+            return redirect()->route('partner.projects.documents', $project)->with('success', $message);
+        } else {
+            return redirect()->route('partner.projects.documents', $project)->with('error', 'Не удалось загрузить ни одного документа. ' . implode('; ', $errors));
+        }
+    }
+
+    /**
+     * Удалить документ проекта
+     */
+    public function deleteDocument(Project $project, $documentId)
+    {
+        // Проверка доступа
+        if (!$this->checkProjectAccess($project)) {
+            abort(403, 'Нет доступа к этому проекту');
+        }
+
+        try {
+            $document = $project->documents()->findOrFail($documentId);
+            
+            // Удаляем файл из хранилища
+            if (Storage::disk('public')->exists($document->file_path)) {
+                Storage::disk('public')->delete($document->file_path);
+            }
+            
+            // Удаляем запись из БД
+            $document->delete();
+            
+            return redirect()->route('partner.projects.documents', $project)->with('success', 'Документ успешно удален');
+            
+        } catch (\Exception $e) {
+            Log::error('Error deleting document: ' . $e->getMessage());
+            return redirect()->route('partner.projects.documents', $project)->with('error', 'Ошибка удаления документа');
+        }
+    }
+
+    /**
+     * Скачать документ проекта
+     */
+    public function downloadDocument(Project $project, $documentId)
+    {
+        // Проверка доступа
+        if (!$this->checkProjectAccess($project)) {
+            abort(403, 'Нет доступа к этому проекту');
+        }
+
+        try {
+            $document = $project->documents()->findOrFail($documentId);
+            
+            if (!Storage::disk('public')->exists($document->file_path)) {
+                abort(404, 'Файл не найден');
+            }
+            
+            return response()->download(
+                storage_path('app/public/' . $document->file_path),
+                $document->original_name
+            );
+            
+        } catch (\Exception $e) {
+            Log::error('Error downloading document: ' . $e->getMessage());
+            abort(404, 'Файл не найден');
+        }
     }
 }

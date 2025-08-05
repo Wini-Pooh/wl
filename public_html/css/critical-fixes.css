@@ -1,0 +1,371 @@
+/**
+ * ИСПРАВЛЕНИЯ КРИТИЧЕСКИХ CSS ПРОБЛЕМ
+ * Стили для стабилизации отображения интерфейса
+ */
+
+/* ===== БАЗОВЫЕ ИСПРАВЛЕНИЯ ===== */
+
+/* Исправление z-index проблем */
+.modal {
+    z-index: 1055 !important;
+}
+
+.modal-backdrop {
+    z-index: 1050 !important;
+}
+
+.toast-container {
+    z-index: 9999 !important;
+}
+
+.navbar {
+    z-index: 1030 !important;
+}
+
+/* ===== ИСПРАВЛЕНИЯ МОДАЛЬНЫХ ОКОН ===== */
+
+/* Предотвращение двойных backdrop'ов */
+.modal-backdrop {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+}
+
+/* Центрирование модальных окон */
+.modal-dialog {
+    margin: 1.75rem auto !important;
+    max-width: calc(100% - 3.5rem) !important;
+}
+
+@media (max-width: 576px) {
+    .modal-dialog {
+        margin: 0.5rem !important;
+        max-width: calc(100% - 1rem) !important;
+    }
+}
+
+/* Исправление переполнения контента в модальных окнах */
+.modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+/* ===== ИСПРАВЛЕНИЯ ВКЛАДОК ===== */
+
+/* Предотвращение скачков при переключении вкладок */
+.tab-content {
+    min-height: 200px;
+    position: relative;
+}
+
+.tab-pane {
+    opacity: 0;
+    transition: opacity 0.15s ease-in-out;
+}
+
+.tab-pane.active {
+    opacity: 1;
+}
+
+/* Исправление горизонтальной прокрутки на мобильных */
+.nav-tabs-mobile {
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.nav-tabs-mobile::-webkit-scrollbar {
+    display: none;
+}
+
+.nav-tabs-mobile .nav-item {
+    display: inline-block !important;
+    float: none !important;
+}
+
+/* ===== ИСПРАВЛЕНИЯ ТАБЛИЦ ===== */
+
+/* Адаптивные таблицы */
+.table-responsive {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+}
+
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .table th,
+    .table td {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.8rem;
+    }
+}
+
+/* ===== ИСПРАВЛЕНИЯ ФОРМ ===== */
+
+/* Исправление отображения файловых input'ов */
+.form-control[type="file"] {
+    padding: 0.375rem 0.75rem;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+}
+
+/* Исправление select'ов */
+.form-select {
+    background-position: right 0.75rem center !important;
+}
+
+/* ===== ИСПРАВЛЕНИЯ КНОПОК ===== */
+
+/* Минимальные размеры для touch */
+.btn {
+    min-height: 38px;
+    min-width: 38px;
+}
+
+@media (max-width: 768px) {
+    .btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+}
+
+/* Исправление btn-group на мобильных */
+@media (max-width: 576px) {
+    .btn-group {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .btn-group .btn {
+        border-radius: 0.375rem !important;
+        margin-bottom: 0.25rem;
+    }
+    
+    .btn-group .btn:last-child {
+        margin-bottom: 0;
+    }
+}
+
+/* ===== ИСПРАВЛЕНИЯ КАРТОЧЕК ===== */
+
+/* Предотвращение переполнения контента */
+.card-body {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Исправление отступов в карточках на мобильных */
+@media (max-width: 576px) {
+    .card-body {
+        padding: 1rem 0.75rem;
+    }
+}
+
+/* ===== ИСПРАВЛЕНИЯ АЛЕРТОВ ===== */
+
+/* Фиксированное позиционирование алертов */
+.alert {
+    position: relative;
+    z-index: 1040;
+}
+
+/* Анимация появления алертов */
+.alert:not(.d-none) {
+    animation: slideInDown 0.3s ease-out;
+}
+
+@keyframes slideInDown {
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* ===== ИСПРАВЛЕНИЯ ЗАГРУЗЧИКОВ ===== */
+
+/* Центрирование спиннеров */
+.spinner-border,
+.spinner-grow {
+    vertical-align: baseline;
+}
+
+.text-center .spinner-border,
+.text-center .spinner-grow {
+    margin: 0 auto;
+}
+
+/* ===== ИСПРАВЛЕНИЯ НАВИГАЦИИ ===== */
+
+/* Исправление переполнения в навигации */
+.navbar-nav {
+    flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+    .navbar-nav {
+        padding: 0.5rem 0;
+    }
+    
+    .navbar-nav .nav-link {
+        padding: 0.5rem 1rem;
+    }
+}
+
+/* ===== ИСПРАВЛЕНИЯ УТИЛИТ ===== */
+
+/* Исправление text-truncate */
+.text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}
+
+/* Исправление отображения badge'ей */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 1.25em;
+}
+
+/* ===== ИСПРАВЛЕНИЯ ПАГИНАЦИИ ===== */
+
+/* Адаптивная пагинация */
+@media (max-width: 576px) {
+    .pagination {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .pagination .page-item {
+        margin: 0.125rem;
+    }
+    
+    .pagination .page-link {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
+    }
+}
+
+/* ===== ИСПРАВЛЕНИЯ ДРОПДАУНОВ ===== */
+
+/* Исправление позиционирования dropdown'ов */
+.dropdown-menu {
+    z-index: 1060;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* ===== ACCESSIBILITY ИСПРАВЛЕНИЯ ===== */
+
+/* Улучшение контрастности */
+.text-muted {
+    color: #6c757d !important;
+}
+
+.btn-outline-secondary:hover {
+    color: #ffffff !important;
+}
+
+/* Фокус индикаторы */
+.btn:focus,
+.form-control:focus,
+.form-select:focus {
+    outline: 2px solid #0d6efd;
+    outline-offset: 2px;
+}
+
+/* ===== ИСПРАВЛЕНИЯ ПЕЧАТИ ===== */
+
+@media print {
+    .btn,
+    .nav,
+    .modal,
+    .toast-container {
+        display: none !important;
+    }
+    
+    .card {
+        border: 1px solid #000 !important;
+        break-inside: avoid;
+    }
+    
+    .tab-content .tab-pane {
+        display: block !important;
+        opacity: 1 !important;
+    }
+}
+
+/* ===== DARK MODE ПОДДЕРЖКА ===== */
+
+@media (prefers-color-scheme: dark) {
+    .glassmorphism-card {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border-color: rgba(255, 255, 255, 0.1) !important;
+    }
+    
+    .modal-content {
+        background-color: #212529 !important;
+        color: #ffffff !important;
+    }
+}
+
+/* ===== АНИМАЦИИ ИСПРАВЛЕНИЯ ===== */
+
+/* Отключение анимаций для пользователей с настройками accessibility */
+@media (prefers-reduced-motion: reduce) {
+    .tab-pane,
+    .alert,
+    .modal,
+    .collapse {
+        transition: none !important;
+        animation: none !important;
+    }
+}
+
+/* ===== КРИТИЧЕСКИЕ ИСПРАВЛЕНИЯ ПРОИЗВОДИТЕЛЬНОСТИ ===== */
+
+/* Предотвращение layout thrashing */
+.container-fluid,
+.container {
+    contain: layout style;
+}
+
+/* GPU ускорение для анимированных элементов */
+.modal,
+.toast,
+.dropdown-menu {
+    will-change: transform, opacity;
+    transform: translateZ(0);
+}
+
+/* Оптимизация перерисовки */
+.tab-content {
+    contain: content;
+}
+
+/* Исправление мерцания при загрузке */
+.fade-in {
+    opacity: 0;
+    animation: fadeInSlow 0.6s ease-out forwards;
+}
+
+@keyframes fadeInSlow {
+    to {
+        opacity: 1;
+    }
+}

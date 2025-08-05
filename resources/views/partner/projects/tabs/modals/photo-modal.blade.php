@@ -1,43 +1,51 @@
-<!-- AJAX Модальное окно для загрузки фотографий (версия 2.0) -->
+<!-- Модальное окно для загрузки фотографий -->
 <div class="modal fade" id="uploadPhotoModal" tabindex="-1" aria-labelledby="uploadPhotoModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="uploadPhotoModalLabel">
-                    <i class="bi bi-cloud-upload me-2"></i>Загрузка фотографий
+                    <i class="bi bi-camera me-2"></i>Загрузить фотографии
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="uploadPhotoForm" enctype="multipart/form-data">
                     @csrf
-                    <input type="hidden" name="project_id" id="photoProjectId" value="{{ $project->id ?? '' }}">
+                    <input type="hidden" name="project_id" id="photoProjectId" value="{{ $project->id }}">
                     
-                    <div class="mb-4">
-                        <label for="photoInput" class="form-label">Выберите фотографии</label>
-                        <input type="file" id="photoInput" name="files[]" class="form-control" multiple accept="image/*">
-                        <div class="form-text">Поддерживаемые форматы: JPEG, PNG, GIF, WebP</div>
+                    <!-- Зона загрузки файлов -->
+                    <div class="upload-zone" id="photoUploadZone">
+                        <div class="upload-content">
+                            <i class="bi bi-cloud-upload display-4 text-muted mb-3"></i>
+                            <h5>Перетащите фотографии сюда</h5>
+                            <p class="text-muted mb-3">или нажмите для выбора файлов</p>
+                            <input type="file" id="photoFileInput" name="files[]" multiple accept="image/*" class="d-none">
+                            <button type="button" class="btn btn-primary" onclick="document.getElementById('photoFileInput').click()">
+                                <i class="bi bi-plus-lg me-1"></i>Выбрать фотографии
+                            </button>
+                        </div>
                     </div>
                     
-                    <div id="photoPreviewContainer" class="mb-4" style="display: none;">
-                        <h6 class="mb-3">Выбранные фотографии: <span id="selectedPhotosCount">0</span></h6>
-                        <div id="photoPreview" class="d-flex flex-wrap gap-2"></div>
+                    <!-- Список выбранных файлов -->
+                    <div id="photoFileList" class="file-list mt-4" style="display: none;">
+                        <h6>Выбранные фотографии:</h6>
+                        <div id="photoFileItems"></div>
                     </div>
                     
-                    <div class="row">
+                    <!-- Дополнительные параметры -->
+                    <div class="row mt-4">
                         <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="photoCategory" class="form-label">Категория</label>
-                                <select class="form-select" id="photoCategory" name="category">
-                                    <option value="">Без категории</option>
-                                    <option value="before">До ремонта</option>
-                                    <option value="after">После ремонта</option>
-                                    <option value="process">Процесс работы</option>
+                            <label for="photoCategory" class="form-label">Категория</label>
+                            <div class="input-group">
+                                <select class="form-select" id="photoCategorySelect" onchange="handleCategoryChange()">
+                                    <option value="">Выберите категорию</option>
+                                    <option value="progress">Ход работ</option>
+                                    <option value="before">До начала работ</option>
+                                    <option value="after">После завершения</option>
                                     <option value="materials">Материалы</option>
+                                    <option value="process">Рабочий процесс</option>
                                     <option value="problems">Проблемы</option>
-                                    <option value="design">Дизайн</option>
-                                    <option value="furniture">Мебель</option>
-                                    <option value="decor">Декор</option>
+                                    <option value="documentation">Документация</option>
                                     <option value="demolition">Демонтаж</option>
                                     <option value="floors">Полы</option>
                                     <option value="walls">Стены</option>
@@ -47,14 +55,23 @@
                                     <option value="heating">Отопление</option>
                                     <option value="doors">Двери</option>
                                     <option value="windows">Окна</option>
+                                    <option value="design">Дизайн</option>
+                                    <option value="furniture">Мебель</option>
+                                    <option value="decor">Декор</option>
+                                    <option value="custom">Своя категория</option>
                                 </select>
+                                <button class="btn btn-outline-secondary" type="button" onclick="toggleCustomCategory()" title="Ввести свою категорию">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
                             </div>
+                            <input type="text" class="form-control mt-2" id="photoCategory" name="category" 
+                                   placeholder="Введите свою категорию..." style="display: none;">
                         </div>
                         <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="photoLocation" class="form-label">Помещение</label>
-                                <select class="form-select" id="photoLocation" name="location">
-                                    <option value="">Не выбрано</option>
+                            <label for="photoLocation" class="form-label">Место съемки</label>
+                            <div class="input-group">
+                                <select class="form-select" id="photoLocationSelect" onchange="handleLocationChange()">
+                                    <option value="">Выберите помещение</option>
                                     <option value="kitchen">Кухня</option>
                                     <option value="living_room">Гостиная</option>
                                     <option value="bedroom">Спальня</option>
@@ -62,85 +79,45 @@
                                     <option value="toilet">Туалет</option>
                                     <option value="hallway">Прихожая</option>
                                     <option value="balcony">Балкон</option>
-                                    <option value="other">Другое</option>
+                                    <option value="corridor">Коридор</option>
+                                    <option value="pantry">Кладовая</option>
+                                    <option value="garage">Гараж</option>
+                                    <option value="basement">Подвал</option>
+                                    <option value="attic">Чердак</option>
+                                    <option value="terrace">Терраса</option>
+                                    <option value="custom">Свое помещение</option>
                                 </select>
+                                <button class="btn btn-outline-secondary" type="button" onclick="toggleCustomLocation()" title="Ввести свое помещение">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
                             </div>
+                            <input type="text" class="form-control mt-2" id="photoLocation" name="location" 
+                                   placeholder="Введите название помещения..." style="display: none;">
                         </div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label for="photoDescription" class="form-label">Описание (необязательно)</label>
-                        <textarea class="form-control" id="photoDescription" name="description" rows="3" placeholder="Добавьте описание фотографий"></textarea>
+                    <div class="mt-3">
+                        <label for="photoDescription" class="form-label">Описание</label>
+                        <textarea class="form-control" id="photoDescription" name="description" rows="3" 
+                                  placeholder="Добавьте описание к фотографиям..."></textarea>
+                    </div>
+                    
+                    <!-- Прогресс загрузки -->
+                    <div id="photoUploadProgress" class="mt-4" style="display: none;">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>Загрузка фотографий...</span>
+                            <span id="photoProgressText">0%</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar" id="photoProgressBar" role="progressbar" style="width: 0%"></div>
+                        </div>
                     </div>
                 </form>
-                
-                <div class="progress mb-3" id="photoUploadProgress" style="display: none;">
-                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
-                </div>
-                
-                <div class="alert alert-danger" id="photoUploadError" style="display: none;"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" id="uploadPhotosBtn" disabled>
-                    <i class="bi bi-cloud-upload me-2"></i>Загрузить
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Модальное окно просмотра фото -->
-<div class="modal fade" id="viewPhotoModal" tabindex="-1" aria-labelledby="viewPhotoModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="viewPhotoModalLabel">Просмотр фото</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
-            </div>
-            <div class="modal-body p-0">
-                <img src="" id="viewPhotoImg" class="img-fluid w-100" alt="Фото проекта">
-                <div class="p-3">
-                    <h5 id="viewPhotoTitle" class="mb-2"></h5>
-                    <div class="d-flex gap-2 mb-2">
-                        <span class="badge bg-primary" id="viewPhotoCategory"></span>
-                        <span class="badge bg-secondary" id="viewPhotoLocation"></span>
-                    </div>
-                    <p id="viewPhotoDescription" class="text-muted"></p>
-                    <div class="text-muted small">
-                        <span id="viewPhotoDate"></span> • 
-                        <span id="viewPhotoSize"></span>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <a href="#" class="btn btn-primary" id="downloadPhotoBtn">
-                    <i class="bi bi-download me-2"></i>Скачать
-                </a>
-                <button type="button" class="btn btn-danger" id="deletePhotoBtn">
-                    <i class="bi bi-trash me-2"></i>Удалить
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Модальное окно подтверждения удаления -->
-<div class="modal fade" id="confirmDeletePhotoModal" tabindex="-1" aria-labelledby="confirmDeletePhotoModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="confirmDeletePhotoModalLabel">Подтверждение удаления</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
-            </div>
-            <div class="modal-body">
-                <p>Вы уверены, что хотите удалить это фото?</p>
-                <input type="hidden" id="photoToDeleteId">
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-danger" id="confirmPhotoDeleteBtn">
-                    <i class="bi bi-trash me-2"></i>Удалить
+                <button type="button" class="btn btn-primary" id="uploadPhotoBtn" disabled>
+                    <i class="bi bi-upload me-1"></i>Загрузить фотографии
                 </button>
             </div>
         </div>
@@ -148,446 +125,27 @@
 </div>
 
 <script>
+// Оптимизированная инициализация через ProjectManager
 $(document).ready(function() {
-    console.log('Инициализация модальных окон для фото');
-    
-    // Очищаем все обработчики на случай повторной инициализации
-    $('#photoInput').off('change');
-    
-    // Обработчик выбора файлов - используем one-time binding для предотвращения множественных вызовов
-    $('#photoInput').off('change').one('change', function(e) {
-        const files = this.files;
-        console.log('Файлы выбраны:', files.length);
-        
-        if (files && files.length > 0) {
-            $('#uploadPhotosBtn').prop('disabled', false);
-            $('#photoPreviewContainer').show();
-            // Отображаем превью
-            showPhotosPreview(files);
-        } else {
-            $('#uploadPhotosBtn').prop('disabled', true);
-            $('#photoPreviewContainer').hide();
-            $('#selectedPhotosCount').text(0);
-        }
-        
-        // Переинициализируем обработчик для следующего выбора файлов
-        $(this).off('change').one('change', arguments.callee);
-    });
-    
-    // Обработчик загрузки фото
-    $('#uploadPhotosBtn').click(function() {
-        uploadPhotos();
-    });
-    
-    // Обработчик удаления фото
-    $('#deletePhotoBtn').click(function() {
-        const photoId = $(this).data('photo-id');
-        $('#photoToDeleteId').val(photoId);
-        $('#viewPhotoModal').modal('hide');
-        $('#confirmDeletePhotoModal').modal('show');
-    });
-    
-    // Подтверждение удаления
-    $('#confirmPhotoDeleteBtn').click(function() {
-        const photoId = $('#photoToDeleteId').val();
-        if (photoId) {
-            deletePhoto(photoId);
-        }
-    });
-    
-    // Сброс при закрытии модального окна
-    $('#uploadPhotoModal').on('hidden.bs.modal', function() {
-        const form = document.getElementById('uploadPhotoForm');
-        if (form) form.reset();
-        
-        $('#photoPreview').empty();
-        $('#photoPreviewContainer').hide();
-        $('#selectedPhotosCount').text(0);
-        $('#uploadPhotosBtn').prop('disabled', true);
-        $('#photoUploadProgress').hide();
-        $('#photoUploadError').hide();
-        
-        // Обновляем список фотографий при закрытии модального окна на случай, если обновление не произошло ранее
-        setTimeout(function() {
-            if (window.PhotoManager && typeof window.PhotoManager.loadPhotos === 'function') {
-                console.log('Дополнительное обновление списка фотографий при закрытии модального окна');
-                window.PhotoManager.loadPhotos();
-            }
-        }, 500);
-    });
+    if (window.projectManager) {
+        // Используем унифицированную систему инициализации модалов
+        window.projectManager.initModal('uploadPhotoModal', 'photo', function() {
+            console.log('✅ Модал фотографий инициализирован через ProjectManager');
+            initPhotoModalHandlers();
+        });
+    } else {
+        console.warn('⚠️ ProjectManager не найден, используем fallback инициализацию');
+        initPhotoModalHandlers();
+    }
 });
 
-// Функция загрузки фотографий через AJAX
-function uploadPhotos() {
-    console.log('Запуск функции uploadPhotos');
-    const form = $('#uploadPhotoForm')[0];
-    const formData = new FormData(form);
-    const projectId = $('#photoProjectId').val();
-    
-    console.log('Проект ID:', projectId);
-    console.log('Количество файлов:', $('#photoInput')[0].files.length);
-    
-    $('#uploadPhotosBtn').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Загрузка...');
-    $('#photoUploadProgress').show();
-    $('#photoUploadError').hide();
-    
-    // Добавляем CSRF-токен
-    formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
-    
-    $.ajax({
-        url: `/partner/projects/${projectId}/photos`,
-        type: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
-        headers: {
-            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-        },
-        xhrFields: {
-            withCredentials: true
-        },
-        xhr: function() {
-            const xhr = new window.XMLHttpRequest();
-            xhr.upload.addEventListener('progress', function(e) {
-                if (e.lengthComputable) {
-                    const percent = Math.round((e.loaded / e.total) * 100);
-                    $('#photoUploadProgress .progress-bar')
-                        .css('width', percent + '%')
-                        .attr('aria-valuenow', percent)
-                        .text(percent + '%');
-                }
-            });
-            return xhr;
-        },
-        success: function(response) {
-            console.log('Фото успешно загружены', response);
-            $('#uploadPhotoModal').modal('hide');
-            
-            // Принудительно инициализируем PhotoManager если он не инициализирован
-            if (!window.PhotoManager?.initialized) {
-                console.log('PhotoManager не инициализирован, принудительно инициализируем...');
-                if (window.PhotoManager && typeof window.PhotoManager.init === 'function') {
-                    window.PhotoManager.init();
-                }
-            }
-            
-            // Обновляем список фотографий - используем правильный менеджер
-            if (window.PhotoManager && typeof window.PhotoManager.loadPhotos === 'function') {
-                console.log('Обновляем список фотографий через PhotoManager.loadPhotos()');
-                window.PhotoManager.loadPhotos();
-            } else if (typeof window.loadPhotos === 'function') {
-                console.log('Обновляем список фотографий через window.loadPhotos()');
-                window.loadPhotos();
-            } else {
-                console.warn('Менеджер фотографий не найден, пробуем перезагрузить вкладку');
-                // Если менеджер не найден, попробуем перезагрузить содержимое вкладки
-                if (typeof loadTabContent === 'function') {
-                    loadTabContent('photos');
-                } else {
-                    // В качестве последнего средства - перезагружаем страницу
-                    console.log('Перезагружаем страницу для обновления фотографий...');
-                    location.reload();
-                }
-            }
-            
-            // Показываем сообщение
-            showMessage('Фотографии успешно загружены', 'success');
-        },
-        error: function(xhr, status, error) {
-            console.error('Ошибка при загрузке фотографий:', error);
-            $('#uploadPhotosBtn').prop('disabled', false).html('<i class="bi bi-cloud-upload me-2"></i>Загрузить');
-            
-            let errorMessage = 'Произошла ошибка при загрузке фотографий';
-            if (xhr.responseJSON && xhr.responseJSON.message) {
-                errorMessage = xhr.responseJSON.message;
-            }
-            
-            $('#photoUploadError').text(errorMessage).show();
-        },
-        complete: function() {
-            $('#uploadPhotosBtn').prop('disabled', false).html('<i class="bi bi-cloud-upload me-2"></i>Загрузить');
-        }
-    });
-}
-
-// Функция удаления фото через AJAX
-function deletePhoto(photoId) {
-    const projectId = $('#photoProjectId').val();
-    
-    $('#confirmPhotoDeleteBtn').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Удаление...');
-    
-    $.ajax({
-        url: `/partner/projects/${projectId}/photos/${photoId}`,
-        type: 'DELETE',
-        data: {
-            _token: $('meta[name="csrf-token"]').attr('content')
-        },
-        xhrFields: {
-            withCredentials: true
-        },
-        success: function(response) {
-            console.log('Фото успешно удалено', response);
-            $('#confirmDeletePhotoModal').modal('hide');
-            
-            // Обновляем список фотографий - используем правильный менеджер
-            if (window.PhotoManager && typeof window.PhotoManager.loadPhotos === 'function') {
-                console.log('Обновляем список фотографий через PhotoManager.loadPhotos()');
-                window.PhotoManager.loadPhotos();
-            } else if (typeof window.loadPhotos === 'function') {
-                console.log('Обновляем список фотографий через window.loadPhotos()');
-                window.loadPhotos();
-            } else {
-                console.warn('Менеджер фотографий не найден, пробуем перезагрузить вкладку');
-                // Если менеджер не найден, попробуем перезагрузить содержимое вкладки
-                if (typeof loadTabContent === 'function') {
-                    loadTabContent('photos');
-                }
-            }
-            
-            // Показываем сообщение
-            showMessage('Фото успешно удалено', 'success');
-        },
-        error: function(xhr, status, error) {
-            console.error('Ошибка при удалении фото:', error);
-            
-            let errorMessage = 'Произошла ошибка при удалении фото';
-            if (xhr.responseJSON && xhr.responseJSON.message) {
-                errorMessage = xhr.responseJSON.message;
-            }
-            
-            showMessage(errorMessage, 'error');
-        },
-        complete: function() {
-            $('#confirmPhotoDeleteBtn').prop('disabled', false).html('<i class="bi bi-trash me-2"></i>Удалить');
-        }
-    });
-}
-
-// Открытие модального окна просмотра фото
-function viewPhoto(photoId) {
-    const projectId = $('#photoProjectId').val();
-    
-    $.ajax({
-        url: `/partner/projects/${projectId}/photos/${photoId}`,
-        type: 'GET',
-        success: function(response) {
-            const photo = response.data;
-            
-            $('#viewPhotoImg').attr('src', photo.url);
-            $('#viewPhotoTitle').text(photo.name || 'Фото без названия');
-            $('#viewPhotoCategory').text(getPhotoCategoryName(photo.category));
-            $('#viewPhotoLocation').text(getPhotoLocationName(photo.location));
-            $('#viewPhotoDescription').text(photo.description || 'Нет описания');
-            $('#viewPhotoDate').text(formatDate(photo.created_at));
-            $('#viewPhotoSize').text(formatFileSize(photo.size));
-            $('#downloadPhotoBtn').attr('href', photo.download_url);
-            $('#deletePhotoBtn').data('photo-id', photo.id);
-            
-            $('#viewPhotoModal').modal('show');
-        },
-        error: function(xhr, status, error) {
-            console.error('Ошибка при получении данных фото:', error);
-            showMessage('Не удалось загрузить данные фото', 'error');
-        }
-    });
-}
-
-// Вспомогательные функции
-function showPhotosPreview(files) {
-    console.log('Вызов showPhotosPreview с', files.length, 'файлами');
-    const container = $('#photoPreview');
-    
-    // Очищаем контейнер перед добавлением новых превью
-    container.empty();
-    
-    if (!files || files.length === 0) return;
-    
-    // Счетчик для отслеживания загруженных файлов
-    let loadedCount = 0;
-    const totalFiles = Array.from(files).filter(file => file.type.startsWith('image/')).length;
-    const alreadyProcessed = new Set(); // Для отслеживания уже обработанных файлов
-    
-    console.log('Всего файлов для обработки:', totalFiles);
-    
-    Array.from(files).forEach((file, index) => {
-        if (file.type.startsWith('image/')) {
-            // Создаем уникальный идентификатор файла
-            const fileId = file.name + '_' + file.size + '_' + index;
-            
-            // Пропускаем, если файл уже обработан
-            if (alreadyProcessed.has(fileId)) {
-                console.log('Файл уже обработан, пропускаем:', file.name);
-                return;
-            }
-            
-            alreadyProcessed.add(fileId);
-            
-            const reader = new FileReader();
-            
-            // Создаем только одного обработчика onload для каждого файла
-            reader.onload = function(e) {
-                // Проверяем, не был ли уже добавлен этот файл
-                if (container.find(`[data-file-index="${index}"]`).length > 0) {
-                    console.log('Превью уже существует, пропускаем:', file.name);
-                    return;
-                }
-                
-                // Создаем элемент превью
-                const preview = $(`
-                    <div class="position-relative d-inline-block me-2 mb-2" data-file-index="${index}" data-file-id="${fileId}">
-                        <img src="${e.target.result}" class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover;">
-                        <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 rounded-circle p-1" style="width: 20px; height: 20px; font-size: 10px;" onclick="removePreview(this, ${index})">
-                            <i class="bi bi-x"></i>
-                        </button>
-                        <small class="d-block text-muted text-center mt-1" style="font-size: 10px; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${file.name}">
-                            ${file.name}
-                        </small>
-                    </div>
-                `);
-                
-                // Добавляем превью в контейнер
-                container.append(preview);
-                
-                loadedCount++;
-                console.log('Обработано файлов:', loadedCount, 'из', totalFiles);
-                
-                // Обновляем текст количества выбранных файлов
-                $('#selectedPhotosCount').text(loadedCount);
-            };
-            
-            // Запускаем чтение файла только один раз
-            reader.readAsDataURL(file);
-        }
-    });
-}
-
-function removePreview(button, index) {
-    const photoInput = document.getElementById('photoInput');
-    if (photoInput && photoInput.files) {
-        // Создаем новый DataTransfer для переноса файлов без удаленного
-        const dt = new DataTransfer();
-        Array.from(photoInput.files).forEach((file, i) => {
-            if (i !== index) {
-                dt.items.add(file);
-            }
-        });
-        
-        // Обновляем список файлов в инпуте
-        photoInput.files = dt.files;
-        
-        // Удаляем превью из DOM
-        $(button).closest('[data-file-index]').remove();
-        
-        // Обновляем счетчик
-        const remainingCount = photoInput.files.length;
-        $('#selectedPhotosCount').text(remainingCount);
-        
-        // Если файлов не осталось, скрываем контейнер и блокируем кнопку
-        if (remainingCount === 0) {
-            $('#photoPreviewContainer').hide();
-            $('#uploadPhotosBtn').prop('disabled', true);
-        }
-        
-        // Не запускаем change, так как это вызовет повторную перерисовку всех превью
-        // и может привести к дублированию. Вместо этого мы обновляем UI напрямую.
-    }
-}
-
-function getPhotoCategoryName(category) {
-    const categories = {
-        'before': 'До ремонта',
-        'after': 'После ремонта',
-        'process': 'Процесс работы',
-        'materials': 'Материалы',
-        'problems': 'Проблемы',
-        'design': 'Дизайн',
-        'furniture': 'Мебель',
-        'decor': 'Декор',
-        'demolition': 'Демонтаж',
-        'floors': 'Полы',
-        'walls': 'Стены',
-        'ceiling': 'Потолки',
-        'electrical': 'Электрика',
-        'plumbing': 'Сантехника',
-        'heating': 'Отопление',
-        'doors': 'Двери',
-        'windows': 'Окна',
-    };
-    
-    return categories[category] || 'Без категории';
-}
-
-function getPhotoLocationName(location) {
-    const locations = {
-        'kitchen': 'Кухня',
-        'living_room': 'Гостиная',
-        'bedroom': 'Спальня',
-        'bathroom': 'Ванная',
-        'toilet': 'Туалет',
-        'hallway': 'Прихожая',
-        'balcony': 'Балкон',
-        'other': 'Другое'
-    };
-    
-    return locations[location] || 'Не указано';
-}
-
-function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
-
-function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Байт';
-    const k = 1024;
-    const sizes = ['Байт', 'КБ', 'МБ', 'ГБ'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
-
-// Функция для отображения сообщений
-function showMessage(message, type = 'info') {
-    let bgClass = 'bg-info';
-    let icon = 'bi-info-circle';
-    
-    if (type === 'success') {
-        bgClass = 'bg-success';
-        icon = 'bi-check-circle';
-    } else if (type === 'error') {
-        bgClass = 'bg-danger';
-        icon = 'bi-exclamation-circle';
-    } else if (type === 'warning') {
-        bgClass = 'bg-warning';
-        icon = 'bi-exclamation-triangle';
-    }
-    
-    const toast = $(`
-        <div class="toast align-items-center ${bgClass} text-white" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="d-flex">
-                <div class="toast-body">
-                    <i class="bi ${icon} me-2"></i>${message}
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Закрыть"></button>
-            </div>
-        </div>
-    `);
-    
-    $('.toast-container').append(toast);
-    const bsToast = new bootstrap.Toast(toast[0]);
-    bsToast.show();
-    
-    setTimeout(() => {
-        toast.remove();
-    }, 5000);
-}
-
-// Дополнительная проверка и восстановление projectId при загрузке модального окна
-$(document).ready(function() {
+function initPhotoModalHandlers() {
+    console.log('📸 Инициализация обработчиков модала фотографий...');
     console.log('=== ПРОВЕРКА PROJECT ID В PHOTO MODAL ===');
     
     // Проверяем projectId в форме
     const formProjectId = $('#photoProjectId').val();
-    console.log('Project ID в форме:', formProjectId);
+    console.log('Project ID в форме фотографий:', formProjectId);
     
     // Проверяем глобальный projectId
     const globalProjectId = window.projectId;
@@ -599,53 +157,522 @@ $(document).ready(function() {
     
     // Если в форме нет projectId, попытаемся восстановить его
     if (!formProjectId || formProjectId === '') {
-        console.warn('Project ID не установлен в форме, пытаемся восстановить...');
+        console.warn('Project ID не установлен в форме фотографий, пытаемся восстановить...');
         
-        // Попробуем взять из различных источников
-        let recoveredProjectId = null;
-        
-        if (globalProjectId && globalProjectId !== 'null') {
-            recoveredProjectId = globalProjectId;
-            console.log('Восстановлен Project ID из window.projectId:', recoveredProjectId);
-        } else if (modalManagerProjectId && modalManagerProjectId !== 'null') {
-            recoveredProjectId = modalManagerProjectId;
-            console.log('Восстановлен Project ID из modalManager:', recoveredProjectId);
-        }
-        
-        // Устанавливаем восстановленный projectId в форму
-        if (recoveredProjectId) {
-            $('#photoProjectId').val(recoveredProjectId);
-            console.log('Project ID установлен в форму:', recoveredProjectId);
-            
-            // Также обновляем PhotoManager если он существует
-            if (window.PhotoManager) {
-                window.PhotoManager.projectId = recoveredProjectId;
-                console.log('Project ID обновлен в PhotoManager:', recoveredProjectId);
-            }
+        if (globalProjectId) {
+            $('#photoProjectId').val(globalProjectId);
+            console.log('✅ Project ID восстановлен из глобальной переменной:', globalProjectId);
+        } else if (modalManagerProjectId) {
+            $('#photoProjectId').val(modalManagerProjectId);
+            console.log('✅ Project ID восстановлен из modalManager:', modalManagerProjectId);
         } else {
-            console.error('НЕ УДАЛОСЬ ВОССТАНОВИТЬ PROJECT ID! Проверьте конфигурацию.');
-        }
-    } else {
-        console.log('Project ID корректно установлен в форме:', formProjectId);
-        
-        // Убедимся, что PhotoManager также имеет правильный projectId
-        if (window.PhotoManager && (!window.PhotoManager.projectId || window.PhotoManager.projectId === 'null')) {
-            window.PhotoManager.projectId = formProjectId;
-            console.log('Project ID синхронизирован с PhotoManager:', formProjectId);
+            console.error('❌ Не удалось восстановить Project ID');
         }
     }
     
-    // Добавляем обработчик для принудительного обновления списка после закрытия модального окна
-    $('#uploadPhotoModal').on('hidden.bs.modal', function() {
-        console.log('Модальное окно закрыто, проверяем необходимость обновления списка фотографий...');
-        
-        // Небольшая задержка, чтобы убедиться, что все AJAX запросы завершились
-        setTimeout(function() {
-            if (window.PhotoManager && window.PhotoManager.initialized) {
-                console.log('Принудительное обновление списка фотографий...');
-                window.PhotoManager.loadPhotos();
-            }
-        }, 1000);
-    });
+    initPhotoUploadHandlers();
 });
+
+function initPhotoUploadHandlers() {
+    console.log('📸 Инициализация обработчиков загрузки фотографий...');
+    
+    // Проверяем, не были ли уже инициализированы обработчики
+    if (window.photoUploadHandlersInitialized) {
+        console.log('ℹ️ Обработчики загрузки фотографий уже инициализированы');
+        return;
+    }
+    
+    const uploadZone = document.getElementById('photoUploadZone');
+    const fileInput = document.getElementById('photoFileInput');
+    const fileList = document.getElementById('photoFileList');
+    const fileItems = document.getElementById('photoFileItems');
+    const uploadBtn = document.getElementById('uploadPhotoBtn');
+    
+    if (!uploadZone || !fileInput || !fileList || !fileItems || !uploadBtn) {
+        console.error('❌ Не найдены необходимые элементы для инициализации загрузки фотографий');
+        return;
+    }
+    
+    let selectedFiles = [];
+
+    // ПОЛНАЯ ОЧИСТКА старых обработчиков с заменой элементов
+    console.log('🧹 Полная очистка обработчиков файлов...');
+    
+    // Клонируем элементы для полной очистки обработчиков
+    const cleanUploadZone = uploadZone.cloneNode(true);
+    const cleanFileInput = fileInput.cloneNode(true);
+    const cleanUploadBtn = uploadBtn.cloneNode(true);
+    
+    uploadZone.parentNode.replaceChild(cleanUploadZone, uploadZone);
+    fileInput.parentNode.replaceChild(cleanFileInput, fileInput);
+    uploadBtn.parentNode.replaceChild(cleanUploadBtn, uploadBtn);
+
+    // Получаем ссылки на новые элементы
+    const newUploadZone = document.getElementById('photoUploadZone');
+    const newFileInput = document.getElementById('photoFileInput');
+    const newUploadBtn = document.getElementById('uploadPhotoBtn');
+
+    console.log('✅ Элементы очищены и заменены');
+
+    // Drag & Drop обработчики
+    newUploadZone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        newUploadZone.classList.add('dragover');
+        console.log('📂 Drag over zone');
+    });
+
+    newUploadZone.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        newUploadZone.classList.remove('dragover');
+    });
+
+    newUploadZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        newUploadZone.classList.remove('dragover');
+        
+        const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+        console.log('📂 Files dropped:', files.length);
+        handleFileSelection(files);
+    });
+
+    // Обработчик выбора файлов через input
+    newFileInput.addEventListener('change', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const files = Array.from(e.target.files);
+        console.log('📂 Files selected via input:', files.length);
+        handleFileSelection(files);
+    });
+
+    // Обработчик клика по зоне загрузки
+    newUploadZone.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('📂 Upload zone clicked');
+        newFileInput.click();
+    });
+
+    // Обработчик кнопки "Выбрать фотографии"
+    const selectBtn = newUploadZone.querySelector('button');
+    if (selectBtn) {
+        selectBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('📂 Select button clicked');
+            newFileInput.click();
+        });
+    }
+
+    function handleFileSelection(files) {
+        console.log('📸 Обработка выбранных файлов:', files.length);
+        
+        if (files.length === 0) {
+            console.log('ℹ️ Файлы не выбраны');
+            return;
+        }
+        
+        selectedFiles = files;
+        displaySelectedFiles();
+        newUploadBtn.disabled = false;
+        
+        console.log('✅ Файлы обработаны:', selectedFiles.length);
+    }
+
+    function displaySelectedFiles() {
+        console.log('📋 Отображение выбранных файлов...');
+        
+        fileItems.innerHTML = '';
+        
+        if (selectedFiles.length === 0) {
+            fileList.style.display = 'none';
+            return;
+        }
+        
+        fileList.style.display = 'block';
+        
+        selectedFiles.forEach((file, index) => {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item d-flex justify-content-between align-items-center p-2 border rounded mb-2';
+            
+            fileItem.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-image me-2"></i>
+                    <div>
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-size text-muted">${formatFileSize(file.size)}</div>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeFile(${index})">
+                    <i class="bi bi-trash"></i>
+                </button>
+            `;
+            
+            fileItems.appendChild(fileItem);
+        });
+    }
+
+    // Глобальная функция для удаления файла
+    window.removeFile = function(index) {
+        selectedFiles.splice(index, 1);
+        displaySelectedFiles();
+        newUploadBtn.disabled = selectedFiles.length === 0;
+    };
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Обработчик загрузки файлов
+    newUploadBtn.addEventListener('click', function() {
+        if (selectedFiles.length === 0) {
+            console.log('❌ Нет файлов для загрузки');
+            return;
+        }
+        
+        console.log('🚀 Начинаем загрузку файлов:', selectedFiles.length);
+        uploadFiles();
+    });
+
+    function uploadFiles() {
+        const projectId = $('#photoProjectId').val();
+        
+        if (!projectId) {
+            console.error('❌ Project ID не найден');
+            alert('Ошибка: ID проекта не найден');
+            return;
+        }
+        
+        console.log('📤 Загружаем файлы для проекта:', projectId);
+        
+        const formData = new FormData();
+        formData.append('project_id', projectId);
+        formData.append('category', $('#photoCategory').val() || $('#photoCategorySelect').val());
+        formData.append('location', $('#photoLocation').val() || $('#photoLocationSelect').val());
+        formData.append('description', $('#photoDescription').val());
+        
+        selectedFiles.forEach(file => {
+            formData.append('files[]', file);
+        });
+        
+        // Показываем прогресс (имитация)
+        const progressContainer = document.getElementById('photoUploadProgress');
+        const progressBar = document.getElementById('photoProgressBar');
+        const progressText = document.getElementById('photoProgressText');
+        
+        progressContainer.style.display = 'block';
+        newUploadBtn.disabled = true;
+        
+        // Простое уведомление вместо AJAX запроса
+        setTimeout(() => {
+            console.log('✅ Загрузка фотографий временно отключена');
+            
+            // Закрываем модальное окно
+            const modal = bootstrap.Modal.getInstance(document.getElementById('uploadPhotoModal'));
+            if (modal) {
+                modal.hide();
+            }
+            
+            // Показываем уведомление
+            alert('Функция загрузки фотографий временно отключена');
+            
+            // Перезагружаем список фотографий
+            if (window.loadPhotos) {
+                window.loadPhotos();
+            } else if (window.location.pathname.includes('/photos')) {
+                // window.location.reload(); // Отключаем перезагрузку страницы
+            }
+            
+            // Очищаем форму
+            selectedFiles = [];
+            displaySelectedFiles();
+            document.getElementById('uploadPhotoForm').reset();
+            
+            // Скрываем прогресс
+            progressContainer.style.display = 'none';
+            newUploadBtn.disabled = false;
+            progressBar.style.width = '0%';
+            progressText.textContent = '0%';
+        }, 1000);
+    }
+    
+    // Отмечаем, что обработчики инициализированы
+    window.photoUploadHandlersInitialized = true;
+    console.log('✅ Обработчики загрузки фотографий инициализированы');
+}
+        if (selectedFiles.length === 0) {
+            fileList.style.display = 'none';
+            return;
+        }
+
+        fileList.style.display = 'block';
+        fileItems.innerHTML = '';
+
+        selectedFiles.forEach((file, index) => {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            fileItem.innerHTML = `
+                <div class="file-icon">
+                    <i class="bi bi-image text-primary"></i>
+                </div>
+                <div class="file-info">
+                    <div class="file-name">${file.name}</div>
+                    <div class="file-size">${formatFileSize(file.size)}</div>
+                </div>
+                <div class="file-actions">
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeFile(${index})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            `;
+            fileItems.appendChild(fileItem);
+        });
+    }
+
+    window.removeFile = function(index) {
+        selectedFiles.splice(index, 1);
+        displaySelectedFiles();
+        uploadBtn.disabled = selectedFiles.length === 0;
+        
+        // Обновляем input
+        const dt = new DataTransfer();
+        selectedFiles.forEach(file => dt.items.add(file));
+        fileInput.files = dt.files;
+    };
+
+    // Обработчик загрузки
+    newUploadBtn.addEventListener('click', function() {
+        if (selectedFiles.length === 0) {
+            return;
+        }
+
+        uploadPhotos();
+    });
+
+    // Отмечаем, что обработчики инициализированы
+    window.photoUploadHandlersInitialized = true;
+
+    function uploadPhotos() {
+        console.log('📤 Начинаем загрузку фотографий...');
+        
+        const formData = new FormData();
+        const projectId = $('#photoProjectId').val();
+        
+        console.log('🏗️ Параметры загрузки:', {
+            projectId: projectId,
+            filesCount: selectedFiles.length,
+            category: $('#photoCategory').val(),
+            location: $('#photoLocation').val(),
+            description: $('#photoDescription').val()
+        });
+        
+        if (!projectId) {
+            console.error('❌ Project ID не найден');
+            if (window.modalManager) {
+                window.modalManager.showErrorToast('Ошибка: ID проекта не найден');
+            }
+            return;
+        }
+        
+        // Добавляем все данные в FormData
+        formData.append('project_id', projectId);
+        
+        // Получаем значение категории
+        const categoryValue = $('#photoCategory').is(':visible') ? 
+            $('#photoCategory').val() : $('#photoCategorySelect').val();
+        formData.append('category', categoryValue);
+        
+        // Получаем значение локации
+        const locationValue = $('#photoLocation').is(':visible') ? 
+            $('#photoLocation').val() : $('#photoLocationSelect').val();
+        formData.append('location', locationValue);
+        
+        formData.append('description', $('#photoDescription').val());
+        formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
+        
+        // Добавляем файлы
+        selectedFiles.forEach((file, index) => {
+            formData.append('files[]', file);
+            console.log(`📎 Добавлен файл ${index + 1}:`, file.name, `(${formatFileSize(file.size)})`);
+        });
+
+        console.log('🚀 Начинаем отправку фотографий на сервер...');
+
+        // Показываем прогресс
+        showUploadProgress();
+        
+        // Отключаем кнопку загрузки
+        newUploadBtn.disabled = true;
+        newUploadBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Загрузка...';
+
+        // Отправляем AJAX запрос
+        $.ajax({
+            url: `/partner/projects/${projectId}/photos`,
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                console.log('✅ Фотографии загружены успешно:', response);
+                
+                hideUploadProgress();
+                
+                // Очищаем форму
+                selectedFiles = [];
+                displaySelectedFiles();
+                newUploadBtn.disabled = true;
+                newUploadBtn.innerHTML = '<i class="bi bi-upload me-1"></i>Загрузить фотографии';
+                
+                // Сбрасываем поля формы
+                $('#photoCategorySelect').val('');
+                $('#photoLocationSelect').val('');
+                $('#photoCategory').val('').hide();
+                $('#photoLocation').val('').hide();
+                $('#photoDescription').val('');
+                
+                // Очищаем input файла
+                document.getElementById('photoFileInput').value = '';
+                
+                if (window.modalManager) {
+                    window.modalManager.closeActiveModal();
+                    window.modalManager.showSuccessToast('Фотографии успешно загружены');
+                } else {
+                    alert('Фотографии успешно загружены');
+                }
+                
+                // Перезагружаем фотографии на странице
+                if (typeof window.reloadPhotos === 'function') {
+                    window.reloadPhotos();
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('❌ Ошибка загрузки фотографий:', {
+                    status: xhr.status,
+                    statusText: xhr.statusText,
+                    responseText: xhr.responseText,
+                    error: error
+                });
+                
+                hideUploadProgress();
+                newUploadBtn.disabled = false;
+                newUploadBtn.innerHTML = '<i class="bi bi-upload me-1"></i>Загрузить фотографии';
+                
+                let errorMessage = 'Ошибка загрузки фотографий';
+                
+                if (xhr.responseJSON) {
+                    if (xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    } else if (xhr.responseJSON.errors) {
+                        // Обработка ошибок валидации
+                        const errors = xhr.responseJSON.errors;
+                        const errorMessages = [];
+                        for (const field in errors) {
+                            if (errors.hasOwnProperty(field)) {
+                                errorMessages.push(...errors[field]);
+                            }
+                        }
+                        errorMessage = errorMessages.join(', ');
+                    }
+                } else if (xhr.status === 413) {
+                    errorMessage = 'Файлы слишком большие. Максимальный размер: 10MB';
+                } else if (xhr.status === 422) {
+                    errorMessage = 'Ошибка валидации данных';
+                } else if (xhr.status === 500) {
+                    errorMessage = 'Внутренняя ошибка сервера';
+                }
+                
+                if (window.modalManager) {
+                    window.modalManager.showErrorToast(errorMessage);
+                } else {
+                    alert(errorMessage);
+                }
+            }
+        });
+    }
+
+    function showUploadProgress() {
+        document.getElementById('photoUploadProgress').style.display = 'block';
+    }
+
+    function hideUploadProgress() {
+        document.getElementById('photoUploadProgress').style.display = 'none';
+    }
+
+    function updateUploadProgress(percent) {
+        const progressBar = document.getElementById('photoProgressBar');
+        const progressText = document.getElementById('photoProgressText');
+        
+        progressBar.style.width = percent + '%';
+        progressText.textContent = Math.round(percent) + '%';
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+}
+
+// Функции для управления кастомными полями
+function handleCategoryChange() {
+    const select = document.getElementById('photoCategorySelect');
+    const input = document.getElementById('photoCategory');
+    
+    if (select.value === 'custom') {
+        toggleCustomCategory();
+    } else {
+        input.style.display = 'none';
+        input.value = '';
+    }
+}
+
+function handleLocationChange() {
+    const select = document.getElementById('photoLocationSelect');
+    const input = document.getElementById('photoLocation');
+    
+    if (select.value === 'custom') {
+        toggleCustomLocation();
+    } else {
+        input.style.display = 'none';
+        input.value = '';
+    }
+}
+
+function toggleCustomCategory() {
+    const select = document.getElementById('photoCategorySelect');
+    const input = document.getElementById('photoCategory');
+    
+    if (input.style.display === 'none' || input.style.display === '') {
+        input.style.display = 'block';
+        input.focus();
+        select.value = 'custom';
+    } else {
+        input.style.display = 'none';
+        input.value = '';
+        select.value = '';
+    }
+}
+
+function toggleCustomLocation() {
+    const select = document.getElementById('photoLocationSelect');
+    const input = document.getElementById('photoLocation');
+    
+    if (input.style.display === 'none' || input.style.display === '') {
+        input.style.display = 'block';
+        input.focus();
+        select.value = 'custom';
+    } else {
+        input.style.display = 'none';
+        input.value = '';
+        select.value = '';
+    }
+}
 </script>

@@ -19,9 +19,8 @@ class ProjectScheme extends Model
         'mime_type',
         'scheme_type',
         'room',
-        'system',
         'scale',
-        'revision',
+        'revision', // В БД хранится как revision, но в форме передается как version
         'engineer',
         'software',
         'description',

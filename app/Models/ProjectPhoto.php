@@ -24,8 +24,11 @@ class ProjectPhoto extends Model
         'comment',
         'photo_date',
         'file_size',
+        'original_file_size',
         'mime_type',
         'file_hash',
+        'is_optimized',
+        'optimization_data',
     ];
     
     /**
@@ -36,6 +39,9 @@ class ProjectPhoto extends Model
     protected $casts = [
         'photo_date' => 'date',
         'file_size' => 'integer',
+        'original_file_size' => 'integer',
+        'is_optimized' => 'boolean',
+        'optimization_data' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -62,5 +68,72 @@ class ProjectPhoto extends Model
     public function getOriginalNameAttribute($value)
     {
         return $value ?: $this->filename;
+    }
+
+    /**
+     * Получить URL миниатюры
+     */
+    public function getThumbnailUrlAttribute($size = 'medium')
+    {
+        if ($this->is_optimized && isset($this->optimization_data['thumbnails'][$size])) {
+            return asset('storage/' . $this->optimization_data['thumbnails'][$size]['path']);
+        }
+        
+        // Возвращаем оригинальное изображение, если миниатюры нет
+        return $this->url;
+    }
+
+    /**
+     * Получить экономию места в процентах
+     */
+    public function getCompressionRatioAttribute()
+    {
+        if ($this->original_file_size && $this->original_file_size > 0) {
+            return round((1 - $this->file_size / $this->original_file_size) * 100, 2);
+        }
+        
+        return 0;
+    }
+
+    /**
+     * Получить форматированный размер файла
+     */
+    public function getFormattedSizeAttribute()
+    {
+        return $this->formatFileSize($this->file_size);
+    }
+
+    /**
+     * Получить форматированный оригинальный размер файла
+     */
+    public function getFormattedOriginalSizeAttribute()
+    {
+        if ($this->original_file_size) {
+            return $this->formatFileSize($this->original_file_size);
+        }
+        
+        return $this->formatted_size;
+    }
+
+    /**
+     * Форматировать размер файла
+     */
+    private function formatFileSize($bytes)
+    {
+        if ($bytes >= 1073741824) {
+            $bytes = number_format($bytes / 1073741824, 2) . ' GB';
+        } elseif ($bytes >= 1048576) {
+            $bytes = number_format($bytes / 1048576, 2) . ' MB';
+        } elseif ($bytes >= 1024) {
+            $bytes = number_format($bytes / 1024, 2) . ' KB';
+        } elseif ($bytes > 1) {
+            $bytes = $bytes . ' bytes';
+        } elseif ($bytes == 1) {
+            $bytes = $bytes . ' byte';
+        } else {
+            $bytes = '0 bytes';
+        }
+
+        return $bytes;
     }
 }

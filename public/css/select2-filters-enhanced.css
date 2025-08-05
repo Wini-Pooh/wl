@@ -1,0 +1,385 @@
+/**
+ * Улучшенные стили для фильтров в табах проекта
+ * Версия: 2.0
+ * Дата: 2 августа 2025
+ */
+
+/* =====================================
+   ОСНОВНЫЕ СТИЛИ ФИЛЬТРОВ
+   ===================================== */
+
+/* Карточки фильтров */
+.card#photoFiltersCard,
+.card#schemeFiltersCard,
+.card#documentFiltersCard,
+.card#designFiltersCard {
+    border: 1px solid rgba(0, 123, 255, 0.2);
+    box-shadow: 0 0.125rem 0.5rem rgba(0, 123, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.card#photoFiltersCard:hover,
+.card#schemeFiltersCard:hover,
+.card#documentFiltersCard:hover,
+.card#designFiltersCard:hover {
+    border-color: rgba(0, 123, 255, 0.4);
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 123, 255, 0.15);
+}
+
+/* Заголовки фильтров */
+.card-header h6 {
+    color: #495057;
+    font-weight: 600;
+}
+
+.card-header .badge {
+    font-size: 0.75rem;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+/* =====================================
+   SELECT2 СТИЛИ ДЛЯ ФИЛЬТРОВ
+   ===================================== */
+
+/* Основные стили для Select2 в фильтрах */
+.select2-container--bootstrap-5 .select2-selection--single {
+    height: 38px;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    background-color: #fff;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.select2-container--bootstrap-5.select2-container--focus .select2-selection--single {
+    border-color: #86b7fe;
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+    padding: 0;
+    color: #212529;
+    line-height: 1.5;
+}
+
+.select2-container--bootstrap-5 .select2-selection--single .select2-selection__arrow {
+    height: 36px;
+    right: 10px;
+}
+
+/* Стили для выпадающего списка */
+.select2-dropdown {
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    z-index: 9999;
+}
+
+.select2-container--bootstrap-5 .select2-dropdown {
+    margin-top: 1px;
+}
+
+/* Стили для поиска */
+.select2-search--dropdown .select2-search__field {
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    margin: 0.5rem;
+    width: calc(100% - 1rem);
+}
+
+.select2-search--dropdown .select2-search__field:focus {
+    border-color: #86b7fe;
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Стили для результатов */
+.select2-results__option {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    color: #212529;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.select2-results__option--highlighted {
+    background-color: #007bff !important;
+    color: #fff !important;
+}
+
+.select2-results__option--selected {
+    background-color: #e9ecef;
+    color: #495057;
+}
+
+/* Placeholder стили */
+.select2-container--bootstrap-5 .select2-selection--single .select2-selection__placeholder {
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* Стили для очистки выбора */
+.select2-container--bootstrap-5 .select2-selection__clear {
+    color: #6c757d;
+    font-size: 1.2rem;
+    padding: 0.25rem;
+    margin-right: 0.5rem;
+    border-radius: 50%;
+    transition: all 0.15s ease-in-out;
+}
+
+.select2-container--bootstrap-5 .select2-selection__clear:hover {
+    color: #dc3545;
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+/* =====================================
+   СПЕЦИАЛЬНЫЕ СТИЛИ ДЛЯ ФИЛЬТРОВ
+   ===================================== */
+
+/* Фильтры фотографий */
+.photo-filter.select2-container {
+    width: 100% !important;
+}
+
+.photo-filter.select2-container .select2-selection--single {
+    border-color: rgba(32, 201, 151, 0.3);
+}
+
+.photo-filter.select2-container.select2-container--focus .select2-selection--single {
+    border-color: #20c997;
+    box-shadow: 0 0 0 0.25rem rgba(32, 201, 151, 0.25);
+}
+
+/* Фильтры схем */
+.scheme-filter.select2-container {
+    width: 100% !important;
+}
+
+.scheme-filter.select2-container .select2-selection--single {
+    border-color: rgba(255, 193, 7, 0.3);
+}
+
+.scheme-filter.select2-container.select2-container--focus .select2-selection--single {
+    border-color: #ffc107;
+    box-shadow: 0 0 0 0.25rem rgba(255, 193, 7, 0.25);
+}
+
+/* Фильтры документов */
+[id*="documentFilter"].select2-container,
+[id*="Document"].select2-container {
+    width: 100% !important;
+}
+
+[id*="documentFilter"].select2-container .select2-selection--single,
+[id*="Document"].select2-container .select2-selection--single {
+    border-color: rgba(108, 117, 125, 0.3);
+}
+
+[id*="documentFilter"].select2-container.select2-container--focus .select2-selection--single,
+[id*="Document"].select2-container.select2-container--focus .select2-selection--single {
+    border-color: #6c757d;
+    box-shadow: 0 0 0 0.25rem rgba(108, 117, 125, 0.25);
+}
+
+/* Фильтры дизайна */
+[id*="designFilter"].select2-container,
+[id*="Design"].select2-container {
+    width: 100% !important;
+}
+
+[id*="designFilter"].select2-container .select2-selection--single,
+[id*="Design"].select2-container .select2-selection--single {
+    border-color: rgba(220, 53, 69, 0.3);
+}
+
+[id*="designFilter"].select2-container.select2-container--focus .select2-selection--single,
+[id*="Design"].select2-container.select2-container--focus .select2-selection--single {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
+}
+
+/* =====================================
+   СТИЛИ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ
+   ===================================== */
+
+@media (max-width: 768px) {
+    /* Мобильные фильтры */
+    .filters-mobile-container {
+        margin-bottom: 1rem;
+    }
+    
+    .filters-toggle-mobile {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        background: linear-gradient(45deg, #007bff, #0056b3);
+        color: white;
+        border: none;
+        border-radius: 0.375rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-weight: 500;
+        box-shadow: 0 0.125rem 0.5rem rgba(0, 123, 255, 0.3);
+        transition: all 0.3s ease;
+    }
+    
+    .filters-toggle-mobile:hover {
+        background: linear-gradient(45deg, #0056b3, #004085);
+        transform: translateY(-1px);
+        box-shadow: 0 0.25rem 0.75rem rgba(0, 123, 255, 0.4);
+    }
+    
+    .filters-toggle-mobile .chevron {
+        transition: transform 0.3s ease;
+    }
+    
+    .filters-toggle-mobile[aria-expanded="true"] .chevron {
+        transform: rotate(180deg);
+    }
+    
+    .mobile-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .action-buttons-mobile {
+        padding-top: 1rem;
+        border-top: 1px solid #dee2e6;
+    }
+    
+    .action-buttons-mobile .btn {
+        width: 100%;
+    }
+    
+    /* Select2 в мобильных фильтрах */
+    .mobile-grid .select2-container {
+        width: 100% !important;
+    }
+    
+    .mobile-grid .select2-selection--single {
+        height: 42px;
+        font-size: 1rem;
+    }
+    
+    .mobile-grid .select2-dropdown {
+        font-size: 1rem;
+    }
+}
+
+/* =====================================
+   СТИЛИ ДЛЯ МОДАЛЬНЫХ ОКОН
+   ===================================== */
+
+.modal .select2-container {
+    z-index: 9999;
+    width: 100% !important;
+}
+
+.modal .select2-dropdown {
+    z-index: 10000;
+}
+
+/* =====================================
+   АНИМАЦИИ И ПЕРЕХОДЫ
+   ===================================== */
+
+.select2-container,
+.select2-dropdown {
+    transition: all 0.3s ease;
+}
+
+.select2-results__option {
+    transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
+}
+
+/* Анимация появления фильтров */
+@keyframes filterSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card-body[id*="filtersContent"],
+.card-body[id*="FiltersBody"] {
+    animation: filterSlideIn 0.3s ease-out;
+}
+
+/* =====================================
+   СОСТОЯНИЯ ЗАГРУЗКИ
+   ===================================== */
+
+.select2-container.loading .select2-selection--single {
+    position: relative;
+    overflow: hidden;
+}
+
+.select2-container.loading .select2-selection--single::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.7), transparent);
+    animation: loading-shimmer 1.5s infinite;
+}
+
+@keyframes loading-shimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+/* =====================================
+   УЛУЧШЕНИЯ ДОСТУПНОСТИ
+   ===================================== */
+
+.select2-container:focus-within {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+}
+
+.select2-results__option[aria-selected="true"] {
+    font-weight: 600;
+}
+
+/* =====================================
+   ТЕМНАЯ ТЕМА (если потребуется)
+   ===================================== */
+
+@media (prefers-color-scheme: dark) {
+    .select2-container--bootstrap-5 .select2-selection--single {
+        background-color: #2d3748;
+        border-color: #4a5568;
+        color: #e2e8f0;
+    }
+    
+    .select2-dropdown {
+        background-color: #2d3748;
+        border-color: #4a5568;
+    }
+    
+    .select2-results__option {
+        color: #e2e8f0;
+    }
+    
+    .select2-results__option--highlighted {
+        background-color: #3182ce !important;
+    }
+}

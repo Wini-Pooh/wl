@@ -206,14 +206,21 @@ class ProjectScheduleController extends Controller
                 'name' => 'required|string|max:255',
                 'description' => 'nullable|string',
                 'status' => 'nullable|string|in:not_started,in_progress,completed,on_hold',
-                'planned_start_date' => 'nullable|date',
-                'planned_end_date' => 'nullable|date|after_or_equal:planned_start_date',
-                'actual_start_date' => 'nullable|date',
-                'actual_end_date' => 'nullable|date|after_or_equal:actual_start_date',
+                'planned_start_date' => 'nullable|date_format:Y-m-d',
+                'planned_end_date' => 'nullable|date_format:Y-m-d|after_or_equal:planned_start_date',
+                'actual_start_date' => 'nullable|date_format:Y-m-d',
+                'actual_end_date' => 'nullable|date_format:Y-m-d|after_or_equal:actual_start_date',
                 'duration_days' => 'nullable|integer|min:0',
-                'progress' => 'nullable|numeric|min:0|max:100', // Изменено с integer на numeric для поддержки десятичных значений
+                'progress' => 'nullable|numeric|min:0|max:100',
                 'order' => 'nullable|integer|min:0',
             ]);
+            
+            // Фильтруем пустые значения для дат
+            foreach (['planned_start_date', 'planned_end_date', 'actual_start_date', 'actual_end_date'] as $dateField) {
+                if (isset($validated[$dateField]) && $validated[$dateField] === '') {
+                    unset($validated[$dateField]);
+                }
+            }
 
             Log::info('Stage validation passed:', $validated);
 
@@ -287,10 +294,21 @@ class ProjectScheduleController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'status' => 'required|in:not_started,in_progress,completed,on_hold',
-            'planned_start_date' => 'nullable|date',
-            'planned_end_date' => 'nullable|date|after_or_equal:planned_start_date',
+            'planned_start_date' => 'nullable|date_format:Y-m-d',
+            'planned_end_date' => 'nullable|date_format:Y-m-d|after_or_equal:planned_start_date',
+            'actual_start_date' => 'nullable|date_format:Y-m-d',
+            'actual_end_date' => 'nullable|date_format:Y-m-d|after_or_equal:actual_start_date',
+            'duration_days' => 'nullable|integer|min:0',
+            'progress' => 'nullable|numeric|min:0|max:100',
             'order' => 'nullable|integer|min:0',
         ]);
+        
+        // Фильтруем пустые значения для дат
+        foreach (['planned_start_date', 'planned_end_date', 'actual_start_date', 'actual_end_date'] as $dateField) {
+            if (isset($validated[$dateField]) && $validated[$dateField] === '') {
+                unset($validated[$dateField]);
+            }
+        }
 
         $stage->update($validated);
 

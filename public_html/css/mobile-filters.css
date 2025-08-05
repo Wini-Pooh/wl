@@ -1,0 +1,654 @@
+/* 
+=== МОБИЛЬНЫЕ ФИЛЬТРЫ И СТАТИСТИКА ===
+Современный синий дизайн с улучшенной адаптацией для всех устройств
+*/
+
+/* ===== ПЕРЕМЕННЫЕ ===== */
+:root {
+    --mobile-primary: #3b82f6;
+    --mobile-primary-dark: #1e40af;
+    --mobile-primary-light: #60a5fa;
+    --mobile-accent: #06b6d4;
+    --mobile-success: #10b981;
+    --mobile-warning: #f59e0b;
+    --mobile-danger: #ef4444;
+    --mobile-glass: rgba(255, 255, 255, 0.95);
+    --mobile-glass-dark: rgba(255, 255, 255, 0.85);
+    --mobile-border: rgba(59, 130, 246, 0.2);
+    --mobile-border-light: rgba(59, 130, 246, 0.1);
+    --mobile-shadow: 0 4px 20px rgba(59, 130, 246, 0.15);
+    --mobile-shadow-lg: 0 8px 32px rgba(59, 130, 246, 0.2);
+    --mobile-radius: 16px;
+    --mobile-radius-sm: 12px;
+    --mobile-radius-xs: 8px;
+}
+
+/* ===== АДАПТИВНЫЕ УТИЛИТЫ ===== */
+.mobile-compact {
+    padding: 0.5rem !important;
+}
+
+.mobile-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 576px) {
+    .mobile-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 768px) {
+    .mobile-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Адаптивные размеры */
+.touch-target {
+    min-height: 48px;
+    min-width: 48px;
+    touch-action: manipulation;
+}
+
+/* Улучшенная типографика для мобильных */
+@media (max-width: 768px) {
+    .h1-mobile { font-size: 1.75rem !important; font-weight: 700; }
+    .h2-mobile { font-size: 1.5rem !important; font-weight: 600; }
+    .h3-mobile { font-size: 1.25rem !important; font-weight: 600; }
+    .h4-mobile { font-size: 1.1rem !important; font-weight: 600; }
+    .h5-mobile { font-size: 1rem !important; font-weight: 600; }
+    
+    .text-mobile-sm { font-size: 0.875rem !important; }
+    .text-mobile-xs { font-size: 0.75rem !important; }
+}
+
+/* ===== ФИЛЬТРЫ ===== */
+.filters-mobile-container {
+    background: var(--mobile-glass);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--mobile-border);
+    border-radius: var(--mobile-radius);
+    box-shadow: var(--mobile-shadow);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+}
+
+.filters-toggle-mobile {
+    width: 100%;
+    background: linear-gradient(135deg, var(--mobile-primary) 0%, var(--mobile-primary-light) 100%);
+    color: white;
+    border: none;
+    border-radius: 0;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    min-height: 56px;
+    touch-action: manipulation;
+    position: relative;
+}
+
+.filters-toggle-mobile:hover,
+.filters-toggle-mobile:focus {
+    background: linear-gradient(135deg, var(--mobile-primary-dark) 0%, var(--mobile-primary) 100%);
+    transform: none;
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.filters-toggle-mobile:active {
+    transform: scale(0.98);
+}
+
+.filters-toggle-mobile .toggle-text {
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+}
+
+.filters-toggle-mobile .toggle-icon {
+    font-size: 1.2rem;
+    margin-right: 8px;
+}
+
+.filters-toggle-mobile i.chevron {
+    transition: transform 0.3s ease;
+    font-size: 1.1rem;
+}
+
+.filters-toggle-mobile[aria-expanded="true"] i.chevron {
+    transform: rotate(180deg);
+}
+
+/* Контент фильтров */
+.filters-collapse-content {
+    padding: 1.5rem;
+    background: var(--mobile-glass-dark);
+    border-top: 1px solid var(--mobile-border-light);
+}
+
+/* Улучшенные поля форм для мобильных */
+@media (max-width: 768px) {
+    .form-label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--mobile-primary-dark);
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+    
+    .form-control, .form-select {
+        border-radius: var(--mobile-radius-xs);
+        border: 2px solid var(--mobile-border);
+        padding: 14px 16px;
+        font-size: 16px; /* Предотвращает зум на iOS */
+        transition: all 0.3s ease;
+        min-height: 52px;
+        background: white;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.08);
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: var(--mobile-primary);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 4px 12px rgba(59, 130, 246, 0.15);
+        outline: none;
+        transform: translateY(-1px);
+    }
+    
+    .form-control::placeholder {
+        color: #9ca3af;
+        font-size: 0.95rem;
+    }
+    
+    .btn {
+        min-height: 52px;
+        border-radius: var(--mobile-radius-xs);
+        font-weight: 600;
+        font-size: 1rem;
+        touch-action: manipulation;
+        padding: 14px 20px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, var(--mobile-primary) 0%, var(--mobile-primary-light) 100%);
+        border: none;
+        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        color: white;
+    }
+    
+    .btn-primary:hover,
+    .btn-primary:focus {
+        background: linear-gradient(135deg, var(--mobile-primary-dark) 0%, var(--mobile-primary) 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        color: white;
+    }
+    
+    .btn-primary:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    }
+    
+    .btn-outline-secondary {
+        border: 2px solid #e5e7eb;
+        color: #6b7280;
+        background: white;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    
+    .btn-outline-secondary:hover {
+        background: #f9fafb;
+        border-color: #d1d5db;
+        color: #374151;
+        transform: translateY(-1px);
+    }
+}
+
+/* ===== СТАТИСТИКА ===== */
+.stats-mobile-container {
+    background: var(--mobile-glass);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--mobile-border);
+    border-radius: var(--mobile-radius);
+    box-shadow: var(--mobile-shadow);
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.stats-mobile-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.stats-mobile-header h6 {
+    margin: 0;
+    font-weight: 600;
+    color: var(--mobile-primary-dark);
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.stats-mobile-header i {
+    margin-right: 8px;
+    color: var(--mobile-primary);
+}
+
+.stats-mobile-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(2, 1fr);
+}
+
+@media (max-width: 480px) {
+    .stats-mobile-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+}
+
+@media (min-width: 768px) {
+    .stats-mobile-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.stat-mobile-item {
+    text-align: center;
+    padding: 1.25rem 0.75rem;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: var(--mobile-radius-sm);
+    border: 1px solid var(--mobile-border-light);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-mobile-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--mobile-primary);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+}
+
+.stat-mobile-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.2);
+    background: rgba(255, 255, 255, 0.95);
+}
+
+.stat-mobile-item:hover::before {
+    transform: scaleX(1);
+}
+
+.stat-mobile-value {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 0.25rem;
+    line-height: 1;
+    display: block;
+}
+
+@media (max-width: 480px) {
+    .stat-mobile-value {
+        font-size: 1.75rem;
+    }
+}
+
+.stat-mobile-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    line-height: 1.2;
+}
+
+/* Цвета статистики с градиентами */
+.stat-primary .stat-mobile-value { 
+    background: linear-gradient(135deg, var(--mobile-primary) 0%, var(--mobile-primary-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.stat-primary::before { background: linear-gradient(90deg, var(--mobile-primary) 0%, var(--mobile-primary-light) 100%); }
+
+.stat-success .stat-mobile-value { 
+    background: linear-gradient(135deg, var(--mobile-success) 0%, #34d399 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.stat-success::before { background: linear-gradient(90deg, var(--mobile-success) 0%, #34d399 100%); }
+
+.stat-warning .stat-mobile-value { 
+    background: linear-gradient(135deg, var(--mobile-warning) 0%, #fbbf24 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.stat-warning::before { background: linear-gradient(90deg, var(--mobile-warning) 0%, #fbbf24 100%); }
+
+.stat-info .stat-mobile-value { 
+    background: linear-gradient(135deg, var(--mobile-accent) 0%, #22d3ee 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.stat-info::before { background: linear-gradient(90deg, var(--mobile-accent) 0%, #22d3ee 100%); }
+
+.stat-danger .stat-mobile-value { 
+    background: linear-gradient(135deg, var(--mobile-danger) 0%, #f87171 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.stat-danger::before { background: linear-gradient(90deg, var(--mobile-danger) 0%, #f87171 100%); }
+
+/* ===== ВКЛАДКИ ===== */
+.nav-tabs-mobile {
+    background: var(--mobile-glass);
+    border-radius: var(--mobile-radius-sm) var(--mobile-radius-sm) 0 0;
+    border: 1px solid var(--mobile-border);
+    border-bottom: none;
+    padding: 0.75rem;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--mobile-primary) var(--mobile-border-light);
+}
+
+.nav-tabs-mobile::-webkit-scrollbar {
+    height: 4px;
+}
+
+.nav-tabs-mobile::-webkit-scrollbar-track {
+    background: var(--mobile-border-light);
+    border-radius: 2px;
+}
+
+.nav-tabs-mobile::-webkit-scrollbar-thumb {
+    background: linear-gradient(90deg, var(--mobile-primary) 0%, var(--mobile-primary-light) 100%);
+    border-radius: 2px;
+}
+
+.nav-tabs-mobile .nav-link {
+    background: none;
+    border: none;
+    border-radius: var(--mobile-radius-xs);
+    padding: 10px 16px;
+    margin: 0 4px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #6b7280;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    position: relative;
+    touch-action: manipulation;
+}
+
+.nav-tabs-mobile .nav-link i {
+    font-size: 1rem;
+    margin-right: 6px;
+}
+
+.nav-tabs-mobile .nav-link.active {
+    background: linear-gradient(135deg, var(--mobile-primary) 0%, var(--mobile-primary-light) 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    transform: translateY(-1px);
+}
+
+.nav-tabs-mobile .nav-link:hover:not(.active) {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--mobile-primary);
+    transform: translateY(-1px);
+}
+
+/* Бейджи в вкладках */
+.nav-tabs-mobile .badge {
+    font-size: 0.7rem;
+    padding: 3px 7px;
+    margin-left: 6px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.nav-tabs-mobile .nav-link.active .badge {
+    background: rgba(255, 255, 255, 0.9) !important;
+    color: var(--mobile-primary) !important;
+}
+
+.nav-tabs-mobile .nav-link:not(.active) .badge {
+    background: var(--mobile-border);
+    color: #6b7280;
+}
+
+/* ===== КОНТЕНТ ВКЛАДОК ===== */
+.tab-content-mobile {
+    background: var(--mobile-glass);
+    border: 1px solid var(--mobile-border);
+    border-radius: 0 0 var(--mobile-radius-sm) var(--mobile-radius-sm);
+    border-top: none;
+    padding: 1.25rem;
+    min-height: 200px;
+}
+
+/* ===== КНОПКИ ДЕЙСТВИЙ ===== */
+.action-buttons-mobile {
+    position: sticky;
+    bottom: 0;
+    background: var(--mobile-glass);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--mobile-border);
+    padding: 1.25rem;
+    margin: 1.25rem -1.25rem -1.25rem -1.25rem;
+    border-radius: 0 0 var(--mobile-radius-sm) var(--mobile-radius-sm);
+    z-index: 10;
+}
+
+.action-buttons-mobile .btn {
+    width: 100%;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+}
+
+.action-buttons-mobile .btn:last-child {
+    margin-bottom: 0;
+}
+
+.action-buttons-mobile .btn-group {
+    width: 100%;
+    display: flex;
+    gap: 0.75rem;
+}
+
+.action-buttons-mobile .btn-group .btn {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+/* ===== УЛУЧШЕННЫЕ КАРТОЧКИ ===== */
+.mobile-card {
+    background: var(--mobile-glass);
+    border: 1px solid var(--mobile-border);
+    border-radius: var(--mobile-radius);
+    box-shadow: var(--mobile-shadow);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.mobile-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--mobile-shadow-lg);
+}
+
+.mobile-card-header {
+    padding: 1.25rem;
+    background: linear-gradient(135deg, var(--mobile-glass) 0%, rgba(255, 255, 255, 0.9) 100%);
+    border-bottom: 1px solid var(--mobile-border-light);
+}
+
+.mobile-card-body {
+    padding: 1.25rem;
+}
+
+.mobile-card-footer {
+    padding: 1rem 1.25rem;
+    background: rgba(255, 255, 255, 0.5);
+    border-top: 1px solid var(--mobile-border-light);
+}
+
+/* ===== АДАПТИВНЫЕ ПОМОЩНИКИ ===== */
+@media (max-width: 768px) {
+    .card-body {
+        padding: 0.50rem;
+    }
+    
+    .container-fluid {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    /* Улучшенные отступы */
+    .mb-mobile-1 { margin-bottom: 0.25rem !important; }
+    .mb-mobile-2 { margin-bottom: 0.5rem !important; }
+    .mb-mobile-3 { margin-bottom: 1rem !important; }
+    .mb-mobile-4 { margin-bottom: 1.5rem !important; }
+    .mb-mobile-5 { margin-bottom: 2rem !important; }
+    
+    .mt-mobile-1 { margin-top: 0.25rem !important; }
+    .mt-mobile-2 { margin-top: 0.5rem !important; }
+    .mt-mobile-3 { margin-top: 1rem !important; }
+    .mt-mobile-4 { margin-top: 1.5rem !important; }
+    .mt-mobile-5 { margin-top: 2rem !important; }
+    
+    .p-mobile-1 { padding: 0.25rem !important; }
+    .p-mobile-2 { padding: 0.5rem !important; }
+    .p-mobile-3 { padding: 1rem !important; }
+    .p-mobile-4 { padding: 1.5rem !important; }
+    
+    .px-mobile-3 { padding-left: 1rem !important; padding-right: 1rem !important; }
+    .py-mobile-3 { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+    
+    /* Адаптивный текст */
+    .text-mobile-truncate {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
+    }
+    
+    /* Компактные заголовки */
+    .h1-mobile { font-size: 1.75rem !important; line-height: 1.2; }
+    .h2-mobile { font-size: 1.5rem !important; line-height: 1.3; }
+    .h3-mobile { font-size: 1.25rem !important; line-height: 1.3; }
+    .h4-mobile { font-size: 1.1rem !important; line-height: 1.4; }
+    
+    /* Адаптивные кнопки */
+    .btn-mobile-sm {
+        padding: 8px 12px;
+        font-size: 0.875rem;
+        min-height: 40px;
+    }
+    
+    .btn-mobile-lg {
+        padding: 16px 24px;
+        font-size: 1.1rem;
+        min-height: 56px;
+    }
+    
+    /* Адаптивные иконки */
+    .icon-mobile-sm { font-size: 1rem; }
+    .icon-mobile-md { font-size: 1.25rem; }
+    .icon-mobile-lg { font-size: 1.5rem; }
+}
+
+/* Дополнительные стили для небольших экранов */
+@media (max-width: 480px) {
+    .container-fluid {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+    
+    .mobile-grid {
+        gap: 0.75rem;
+    }
+    
+    .stat-mobile-value {
+        font-size: 1.5rem;
+    }
+    
+    .btn {
+        font-size: 0.95rem;
+        padding: 12px 16px;
+    }
+    
+    .filters-collapse-content {
+        padding: 1rem;
+    }
+}
+
+/* ===== АНИМАЦИИ ===== */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-slide-up {
+    animation: slideInUp 0.3s ease-out;
+}
+
+/* ===== ПУСТЫЕ СОСТОЯНИЯ ===== */
+.empty-state-mobile {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: #6b7280;
+}
+
+.empty-state-mobile i {
+    font-size: 3rem;
+    color: rgba(59, 130, 246, 0.3);
+    margin-bottom: 1rem;
+}
+
+.empty-state-mobile h4 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #374151;
+}
+
+.empty-state-mobile p {
+    font-size: 0.875rem;
+    margin-bottom: 0;
+}

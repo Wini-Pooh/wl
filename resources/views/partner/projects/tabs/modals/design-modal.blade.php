@@ -1,34 +1,49 @@
-<!-- AJAX Модальное окно для загрузки дизайн-файлов (версия 2.0) -->
+<!-- Модальное окно для загрузки дизайн-файлов -->
 <div class="modal fade" id="uploadDesignModal" tabindex="-1" aria-labelledby="uploadDesignModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="uploadDesignModalLabel">
-                    <i class="bi bi-cloud-upload me-2"></i>Загрузка дизайн-файлов
+                    <i class="bi bi-paint-bucket me-2"></i>Загрузить дизайн-файлы
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="uploadDesignForm" enctype="multipart/form-data">
                     @csrf
-                    <input type="hidden" name="project_id" id="designProjectId" value="{{ $project->id ?? '' }}">
+                    <input type="hidden" name="project_id" id="designProjectId" value="{{ $project->id }}">
                     
-                    <div class="mb-4">
-                        <label for="designInput" class="form-label">Выберите файлы дизайна</label>
-                        <input type="file" id="designInput" name="files[]" class="form-control" multiple>
-                        <div class="form-text">Поддерживаемые форматы: JPG, PNG, PDF, PSD, AI, INDD, DWG, SKP, 3DS, MAX</div>
+                    <!-- Зона загрузки файлов -->
+                    <div class="upload-zone" id="designUploadZone">
+                        <div class="upload-content">
+                            <i class="bi bi-palette display-4 text-muted mb-3"></i>
+                            <h5>Перетащите файлы дизайна сюда</h5>
+                            <p class="text-muted mb-3">или нажмите для выбора файлов</p>
+                            <input type="file" id="designFileInput" name="design_files[]" multiple 
+                                   accept="image/*,.psd,.ai,.sketch,.fig,.dwg,.dxf,.3ds,.max" class="d-none">
+                            <button type="button" class="btn btn-primary" id="selectDesignFilesBtn">
+                                <i class="bi bi-plus-lg me-1"></i>Выбрать файлы
+                            </button>
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    Поддерживаемые форматы: JPG, PNG, GIF, SVG, PSD, AI, Sketch, Figma, DWG, DXF, 3DS, MAX
+                                </small>
+                            </div>
+                        </div>
                     </div>
                     
-                    <div id="designPreviewContainer" class="mb-4" style="display: none;">
-                        <h6 class="mb-3">Выбранные файлы: <span id="selectedDesignCount">0</span></h6>
-                        <div id="designPreview" class="d-flex flex-wrap gap-2"></div>
+                    <!-- Список выбранных файлов -->
+                    <div id="designFileList" class="file-list mt-4" style="display: none;">
+                        <h6>Выбранные файлы:</h6>
+                        <div id="designFileItems"></div>
                     </div>
                     
-                    <div class="row">
+                    <!-- Дополнительные параметры -->
+                    <div class="row mt-4">
                         <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="designType" class="form-label">Тип дизайна</label>
-                                <select class="form-select" id="designType" name="design_type">
+                            <label for="designType" class="form-label">Тип дизайна</label>
+                            <div class="input-group">
+                                <select class="form-select" id="designTypeSelect" onchange="handleDesignTypeChange()">
                                     <option value="">Выберите тип</option>
                                     <option value="3d">3D визуализация</option>
                                     <option value="layout">Планировка</option>
@@ -38,118 +53,100 @@
                                     <option value="concept">Концепт</option>
                                     <option value="detail">Детализация</option>
                                     <option value="material">Материалы</option>
-                                    <option value="other">Другое</option>
+                                    <option value="elevation">Развертка</option>
+                                    <option value="section">Разрез</option>
+                                    <option value="specification">Спецификация</option>
+                                    <option value="custom">Свой тип</option>
                                 </select>
+                                <button class="btn btn-outline-secondary" type="button" onclick="toggleCustomDesignType()" title="Ввести свой тип дизайна">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
                             </div>
+                            <input type="text" class="form-control mt-2" id="designType" name="design_type" 
+                                   placeholder="Введите свой тип дизайна..." style="display: none;">
                         </div>
                         <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="designRoom" class="form-label">Помещение</label>
-                                <select class="form-select" id="designRoom" name="room">
-                                    <option value="">Не выбрано</option>
+                            <label for="designRoom" class="form-label">Помещение</label>
+                            <div class="input-group">
+                                <select class="form-select" id="designRoomSelect" onchange="handleDesignRoomChange()">
+                                    <option value="">Выберите помещение</option>
                                     <option value="kitchen">Кухня</option>
                                     <option value="living_room">Гостиная</option>
                                     <option value="bedroom">Спальня</option>
                                     <option value="bathroom">Ванная</option>
                                     <option value="toilet">Туалет</option>
                                     <option value="hallway">Прихожая</option>
-                                    <option value="all">Все помещения</option>
-                                    <option value="other">Другое</option>
+                                    <option value="balcony">Балкон</option>
+                                    <option value="corridor">Коридор</option>
+                                    <option value="office">Кабинет</option>
+                                    <option value="children">Детская</option>
+                                    <option value="pantry">Кладовая</option>
+                                    <option value="garage">Гараж</option>
+                                    <option value="basement">Подвал</option>
+                                    <option value="attic">Чердак</option>
+                                    <option value="terrace">Терраса</option>
+                                    <option value="custom">Свое помещение</option>
                                 </select>
+                                <button class="btn btn-outline-secondary" type="button" onclick="toggleCustomDesignRoom()" title="Ввести свое помещение">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
                             </div>
+                            <input type="text" class="form-control mt-2" id="designRoom" name="room" 
+                                   placeholder="Введите название помещения..." style="display: none;">
                         </div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label for="designDescription" class="form-label">Описание (необязательно)</label>
-                        <textarea class="form-control" id="designDescription" name="description" rows="3" placeholder="Добавьте описание файлов дизайна"></textarea>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <label for="designStyle" class="form-label">Стиль</label>
+                            <div class="input-group">
+                                <select class="form-select" id="designStyleSelect" onchange="handleDesignStyleChange()">
+                                    <option value="">Выберите стиль</option>
+                                    <option value="modern">Современный</option>
+                                    <option value="classic">Классический</option>
+                                    <option value="minimalism">Минимализм</option>
+                                    <option value="loft">Лофт</option>
+                                    <option value="scandinavian">Скандинавский</option>
+                                    <option value="provence">Прованс</option>
+                                    <option value="high_tech">Хай-тек</option>
+                                    <option value="eco">Эко</option>
+                                    <option value="art_deco">Арт-деко</option>
+                                    <option value="neoclassic">Неоклассика</option>
+                                    <option value="fusion">Фьюжн</option>
+                                    <option value="industrial">Индустриальный</option>
+                                    <option value="custom">Свой стиль</option>
+                                </select>
+                                <button class="btn btn-outline-secondary" type="button" onclick="toggleCustomDesignStyle()" title="Ввести свой стиль">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                            </div>
+                            <input type="text" class="form-control mt-2" id="designStyle" name="style" 
+                                   placeholder="Введите название стиля..." style="display: none;">
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <label for="designDescription" class="form-label">Описание</label>
+                        <textarea class="form-control" id="designDescription" name="description" rows="3" 
+                                  placeholder="Добавьте описание к дизайн-файлам..."></textarea>
+                    </div>
+                    
+                    <!-- Прогресс загрузки -->
+                    <div id="designUploadProgress" class="mt-4" style="display: none;">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>Загрузка дизайн-файлов...</span>
+                            <span id="designProgressText">0%</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar" id="designProgressBar" role="progressbar" style="width: 0%"></div>
+                        </div>
                     </div>
                 </form>
-                
-                <div class="progress mb-3" id="designUploadProgress" style="display: none;">
-                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
-                </div>
-                
-                <div class="alert alert-danger" id="designUploadError" style="display: none;"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" id="uploadDesignsBtn" disabled>
-                    <i class="bi bi-cloud-upload me-2"></i>Загрузить
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Модальное окно просмотра дизайн-файла -->
-<div class="modal fade" id="viewDesignModal" tabindex="-1" aria-labelledby="viewDesignModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="viewDesignModalLabel">Просмотр дизайн-файла</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center mb-4" id="designPreviewContent">
-                    <!-- Содержимое будет добавлено динамически -->
-                </div>
-                
-                <div class="card">
-                    <div class="card-body">
-                        <h5 id="viewDesignTitle" class="card-title mb-3"></h5>
-                        
-                        <div class="d-flex flex-wrap gap-2 mb-3">
-                            <span class="badge bg-primary" id="viewDesignType"></span>
-                            <span class="badge bg-secondary" id="viewDesignRoom"></span>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <h6 class="text-muted">Описание:</h6>
-                            <p id="viewDesignDescription" class="mb-0"></p>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6">
-                                <p class="mb-1"><strong>Размер файла:</strong> <span id="viewDesignSize"></span></p>
-                                <p class="mb-1"><strong>Тип файла:</strong> <span id="viewDesignFormat"></span></p>
-                            </div>
-                            <div class="col-md-6">
-                                <p class="mb-1"><strong>Дата загрузки:</strong> <span id="viewDesignDate"></span></p>
-                                <p class="mb-1"><strong>Загрузил:</strong> <span id="viewDesignUser"></span></p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <a href="#" class="btn btn-primary" id="downloadDesignBtn" target="_blank">
-                    <i class="bi bi-download me-2"></i>Скачать
-                </a>
-                <button type="button" class="btn btn-danger" id="deleteDesignBtn">
-                    <i class="bi bi-trash me-2"></i>Удалить
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Модальное окно подтверждения удаления -->
-<div class="modal fade" id="confirmDeleteDesignModal" tabindex="-1" aria-labelledby="confirmDeleteDesignModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="confirmDeleteDesignModalLabel">Подтверждение удаления</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
-            </div>
-            <div class="modal-body">
-                <p>Вы уверены, что хотите удалить этот файл дизайна?</p>
-                <input type="hidden" id="designToDeleteId">
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-danger" id="confirmDesignDeleteBtn">
-                    <i class="bi bi-trash me-2"></i>Удалить
+                <button type="button" class="btn btn-primary" id="uploadDesignBtn" disabled>
+                    <i class="bi bi-upload me-1"></i>Загрузить файлы
                 </button>
             </div>
         </div>
@@ -157,531 +154,526 @@
 </div>
 
 <script>
-$(document).ready(function() {
-    console.log('Инициализация модальных окон для дизайна');
+// Предотвращаем множественную инициализацию
+if (!window.designModalInitialized) {
+    window.designModalInitialized = true;
+
+    // Оптимизированная инициализация через ProjectManager
+    $(document).ready(function() {
+        console.log('🎨 Инициализация модального окна дизайна...');
+        
+        // Проверяем и устанавливаем project ID
+        const projectId = window.projectId || 
+                         $('meta[name="project-id"]').attr('content') || 
+                         $('#projectId').val() ||
+                         $('[data-project-id]').data('project-id');
+        
+        if (projectId) {
+            $('#designProjectId').val(projectId);
+            console.log('🎨 Project ID установлен:', projectId);
+        } else {
+            console.error('❌ Project ID не найден для модального окна дизайна');
+        }
+        
+        if (window.projectManager) {
+            // Используем унифицированную систему инициализации модалов
+            window.projectManager.initModal('uploadDesignModal', 'design', function() {
+                console.log('✅ Модал дизайна инициализирован через ProjectManager');
+                initDesignModalHandlers();
+            });
+        } else {
+            console.warn('⚠️ ProjectManager не найден, используем fallback инициализацию');
+            initDesignModalHandlers();
+        }
+    });
+
+    // Обработчик закрытия модального окна для очистки обработчиков
+    $('#uploadDesignModal').on('hidden.bs.modal', function () {
+        console.log('🧹 Очистка состояния modal дизайна...');
+        window.designUploadHandlersInitialized = false;
+        
+        // Очищаем флаги кнопок
+        const selectButton = document.getElementById('selectDesignFilesBtn');
+        if (selectButton) {
+            selectButton._designClickHandlerAttached = false;
+        }
+    });
+}
+
+function initDesignModalHandlers() {
+    console.log('🎨 Инициализация обработчиков модала дизайна...');
     
-    // Функция для отображения превью дизайн-файлов
-    function showDesignPreview(files) {
-        console.log('Вызов showDesignPreview с', files.length, 'файлами');
-        const container = $('#designPreview');
-        
-        // Очищаем контейнер
-        container.html('');
-        
-        if (!files || files.length === 0) return;
-        
-        // Для отслеживания уже обработанных файлов
-        const alreadyProcessed = new Set();
-        let loadedCount = 0;
-        
-        // Создаем превью для файлов
-        Array.from(files).forEach((file, index) => {
-            // Создаем уникальный идентификатор файла
-            const fileId = file.name + '_' + file.size + '_' + index;
-            
-            // Пропускаем, если файл уже обработан
-            if (alreadyProcessed.has(fileId)) {
-                console.log('Файл уже обработан, пропускаем:', file.name);
-                return;
-            }
-            
-            alreadyProcessed.add(fileId);
-            
-            // Для изображений создаем превью
-            if (file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    // Проверяем, не был ли уже добавлен этот файл
-                    if (container.find(`[data-file-id="${fileId}"]`).length > 0) {
-                        console.log('Превью уже существует, пропускаем:', file.name);
-                        return;
-                    }
-                    
-                    container.append(`
-                        <div class="position-relative d-inline-block me-2 mb-2" data-file-index="${index}" data-file-id="${fileId}">
-                            <img src="${e.target.result}" class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover;">
-                            <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 rounded-circle p-1" style="width: 20px; height: 20px; font-size: 10px;" onclick="removeDesignPreview(this, ${index})">
-                                <i class="bi bi-x"></i>
-                            </button>
-                            <small class="d-block text-muted text-center mt-1" style="font-size: 10px; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${file.name}">
-                                ${file.name}
-                            </small>
-                        </div>
-                    `);
-                    
-                    loadedCount++;
-                    $('#selectedDesignCount').text(loadedCount);
-                };
-                reader.readAsDataURL(file);
-            } else {
-                // Для других файлов показываем иконку
-                const extension = file.name.split('.').pop().toLowerCase();
-                let icon = 'bi-file';
-                
-                switch (extension) {
-                    case 'pdf':
-                        icon = 'bi-file-pdf';
-                        break;
-                    case 'psd':
-                    case 'ai':
-                    case 'xd':
-                        icon = 'bi-file-earmark-richtext';
-                        break;
-                    case 'dwg':
-                    case 'dxf':
-                        icon = 'bi-file-earmark-ruled';
-                        break;
-                }
-                
-                container.append(`
-                    <div class="position-relative d-inline-block me-2 mb-2" data-file-index="${index}" data-file-id="${fileId}">
-                        <div class="design-preview text-center p-2 border rounded">
-                            <i class="${icon} fs-1"></i>
-                            <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 rounded-circle p-1" style="width: 20px; height: 20px; font-size: 10px;" onclick="removeDesignPreview(this, ${index})">
-                                <i class="bi bi-x"></i>
-                            </button>
-                            <small class="d-block text-muted mt-1" style="font-size: 10px; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${file.name}">
-                                ${file.name}
-                            </small>
-                        </div>
-                    </div>
-                `);
-                
-                loadedCount++;
-                $('#selectedDesignCount').text(loadedCount);
-            }
-        });
+    // Проверяем, не были ли уже инициализированы обработчики
+    if (window.designUploadHandlersInitialized) {
+        console.log('ℹ️ Обработчики дизайна уже инициализированы, пропускаем');
+        return;
     }
+    
+    // Инициализация при открытии modal
+    $('#uploadDesignModal').on('shown.bs.modal', function () {
+        console.log('=== ПРОВЕРКА PROJECT ID В DESIGN MODAL ===');
+        
+        // Проверяем projectId в форме
+        const formProjectId = $('#designProjectId').val();
+        console.log('Project ID в форме дизайна:', formProjectId);
+        
+        // Проверяем глобальный projectId
+        const globalProjectId = window.projectId;
+        console.log('Глобальный Project ID:', globalProjectId);
+        
+        // Проверяем projectId в modalManager
+        const modalManagerProjectId = window.modalManager ? window.modalManager.projectId : null;
+        console.log('Project ID в modalManager:', modalManagerProjectId);
+        
+        // Если в форме нет projectId, попытаемся восстановить его
+        if (!formProjectId || formProjectId === '') {
+            console.warn('Project ID не установлен в форме дизайна, пытаемся восстановить...');
+            
+            if (globalProjectId) {
+                $('#designProjectId').val(globalProjectId);
+                console.log('✅ Project ID восстановлен из глобальной переменной:', globalProjectId);
+            } else if (modalManagerProjectId) {
+                $('#designProjectId').val(modalManagerProjectId);
+                console.log('✅ Project ID восстановлен из modalManager:', modalManagerProjectId);
+            } else {
+                console.error('❌ Не удалось восстановить Project ID');
+            }
+        }
+        
+        // Инициализируем обработчики только при открытии
+        initDesignUploadHandlers();
+    });
+    
+    // Отмечаем, что обработчики инициализированы
+    window.designUploadHandlersInitialized = true;
+    console.log('✅ Обработчики модала дизайна инициализированы');
+}
+        
+        // Если в форме нет projectId, попытаемся восстановить его
+        if (!formProjectId || formProjectId === '') {
+            console.warn('Project ID не установлен в форме дизайна, пытаемся восстановить...');
+            
+            if (globalProjectId) {
+                $('#designProjectId').val(globalProjectId);
+                console.log('✅ Project ID восстановлен из глобальной переменной:', globalProjectId);
+            } else if (modalManagerProjectId) {
+                $('#designProjectId').val(modalManagerProjectId);
+                console.log('✅ Project ID восстановлен из modalManager:', modalManagerProjectId);
+            } else {
+                console.error('❌ Не удалось восстановить Project ID');
+            }
+        }
+        
+        initDesignUploadHandlers();
+    });
+}
+
+function initDesignUploadHandlers() {
+    // Предотвращаем повторную инициализацию
+    if (window.designUploadHandlersInitialized) {
+        console.log('🎨 Обработчики дизайна уже инициализированы, пропускаем...');
+        return;
+    }
+    
+    console.log('🎨 Инициализация обработчиков загрузки дизайн-файлов...');
+    window.designUploadHandlersInitialized = true;
+    
+    const uploadZone = document.getElementById('designUploadZone');
+    const fileInput = document.getElementById('designFileInput');
+    const fileList = document.getElementById('designFileList');
+    const fileItems = document.getElementById('designFileItems');
+    const uploadBtn = document.getElementById('uploadDesignBtn');
+    let selectedFiles = [];
+
+    // Удаляем старые обработчики если они есть
+    if (uploadZone._designHandlersAttached) {
+        console.log('🧹 Удаляем старые обработчики...');
+        return;
+    }
+
+    uploadZone._designHandlersAttached = true;
+
+    // Обработчики drag & drop
+    uploadZone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadZone.classList.add('dragover');
+    });
+
+    uploadZone.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        uploadZone.classList.remove('dragover');
+    });
+
+    uploadZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadZone.classList.remove('dragover');
+        
+        const files = Array.from(e.dataTransfer.files);
+        handleFileSelection(files);
+    });
 
     // Обработчик выбора файлов
-    $('#designInput').off('change').one('change', function(e) {
-        const files = this.files;
-        console.log('Дизайн-файлы выбраны:', files.length);
-        
-        if (files && files.length > 0) {
-            $('#uploadDesignsBtn').prop('disabled', false);
-            $('#designPreviewContainer').show();
-            showDesignPreview(files);
-        } else {
-            $('#uploadDesignsBtn').prop('disabled', true);
-            $('#designPreviewContainer').hide();
-            $('#selectedDesignCount').text(0);
-        }
-        
-        // Переинициализируем обработчик для следующего выбора файлов
-        $(this).off('change').one('change', arguments.callee);
+    fileInput.addEventListener('change', function(e) {
+        const files = Array.from(e.target.files);
+        handleFileSelection(files);
     });
-    
-    // Обработчик загрузки дизайн-файлов
-    $('#uploadDesignsBtn').click(function() {
-        uploadDesignFiles();
-    });
-    
-    // Обработчик удаления дизайн-файла
-    $('#deleteDesignBtn').click(function() {
-        const designId = $(this).data('design-id');
-        $('#designToDeleteId').val(designId);
-        $('#viewDesignModal').modal('hide');
-        $('#confirmDeleteDesignModal').modal('show');
-    });
-    
-    // Подтверждение удаления
-    $('#confirmDesignDeleteBtn').click(function() {
-        const designId = $('#designToDeleteId').val();
-        if (designId) {
-            deleteDesignFile(designId);
-        }
-    });
-    
-    // Сброс при закрытии модального окна
-    $('#uploadDesignModal').on('hidden.bs.modal', function() {
-        const form = document.getElementById('uploadDesignForm');
-        if (form) form.reset();
-        
-        $('#designPreview').empty();
-        $('#designPreviewContainer').hide();
-        $('#selectedDesignCount').text(0);
-        $('#uploadDesignsBtn').prop('disabled', true);
-        $('#designUploadProgress').hide();
-        $('#designUploadError').hide();
-    });
-});
 
-// Функция загрузки дизайн-файлов через AJAX
-function uploadDesignFiles() {
-    const form = $('#uploadDesignForm')[0];
-    const formData = new FormData(form);
-    const projectId = $('#designProjectId').val();
-    
-    // Добавляем CSRF токен
-    formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
-    
-    $('#uploadDesignsBtn').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Загрузка...');
-    $('#designUploadProgress').show();
-    $('#designUploadError').hide();
-    
-    $.ajax({
-        url: `/api/projects/${projectId}/design`,
-        type: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
-        xhr: function() {
-            const xhr = new window.XMLHttpRequest();
-            xhr.upload.addEventListener('progress', function(e) {
-                if (e.lengthComputable) {
-                    const percent = Math.round((e.loaded / e.total) * 100);
-                    $('#designUploadProgress .progress-bar')
-                        .css('width', percent + '%')
-                        .attr('aria-valuenow', percent)
-                        .text(percent + '%');
-                }
-            });
-            return xhr;
-        },
-        success: function(response) {
-            console.log('Дизайн-файлы успешно загружены', response);
-            $('#uploadDesignModal').modal('hide');
-            
-            // Обновляем список дизайн-файлов
-            if (window.DesignManagerFixed && typeof window.DesignManagerFixed.loadFiles === 'function') {
-                window.DesignManagerFixed.loadFiles();
-            }
-            
-            // Показываем сообщение
-            showMessage('Дизайн-файлы успешно загружены', 'success');
-        },
-        error: function(xhr, status, error) {
-            console.error('Ошибка при загрузке дизайн-файлов:', error);
-            $('#uploadDesignsBtn').prop('disabled', false).html('<i class="bi bi-cloud-upload me-2"></i>Загрузить');
-            
-            let errorMessage = 'Произошла ошибка при загрузке дизайн-файлов';
-            if (xhr.responseJSON && xhr.responseJSON.message) {
-                errorMessage = xhr.responseJSON.message;
-            }
-            
-            $('#designUploadError').text(errorMessage).show();
-        },
-        complete: function() {
-            $('#uploadDesignsBtn').prop('disabled', false).html('<i class="bi bi-cloud-upload me-2"></i>Загрузить');
-        }
-    });
-}
-
-// Функция удаления дизайн-файла через AJAX
-function deleteDesignFile(designId) {
-    const projectId = $('#designProjectId').val();
-    
-    $('#confirmDesignDeleteBtn').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Удаление...');
-    
-    $.ajax({
-        url: `/api/projects/${projectId}/design/${designId}`,
-        type: 'DELETE',
-        data: {
-            _token: $('meta[name="csrf-token"]').attr('content')
-        },
-        success: function(response) {
-            console.log('Дизайн-файл успешно удален', response);
-            $('#confirmDeleteDesignModal').modal('hide');
-            
-            // Обновляем список дизайн-файлов
-            if (window.DesignManagerFixed && typeof window.DesignManagerFixed.loadFiles === 'function') {
-                window.DesignManagerFixed.loadFiles();
-            }
-            
-            // Показываем сообщение
-            showMessage('Дизайн-файл успешно удален', 'success');
-        },
-        error: function(xhr, status, error) {
-            console.error('Ошибка при удалении дизайн-файла:', error);
-            
-            let errorMessage = 'Произошла ошибка при удалении дизайн-файла';
-            if (xhr.responseJSON && xhr.responseJSON.message) {
-                errorMessage = xhr.responseJSON.message;
-            }
-            
-            showMessage(errorMessage, 'error');
-        },
-        complete: function() {
-            $('#confirmDesignDeleteBtn').prop('disabled', false).html('<i class="bi bi-trash me-2"></i>Удалить');
-        }
-    });
-}
-
-// Открытие модального окна просмотра дизайн-файла
-function viewDesign(designId) {
-    const projectId = $('#designProjectId').val();
-    
-    $.ajax({
-        url: `/api/projects/${projectId}/design/${designId}`,
-        type: 'GET',
-        success: function(response) {
-            const design = response.data;
-            
-            // Заполняем данные в модальном окне
-            $('#viewDesignTitle').text(design.name || 'Файл дизайна без названия');
-            $('#viewDesignType').text(getDesignTypeName(design.design_type));
-            $('#viewDesignRoom').text(getDesignRoomName(design.room));
-            $('#viewDesignDescription').text(design.description || 'Описание отсутствует');
-            $('#viewDesignSize').text(formatFileSize(design.size));
-            $('#viewDesignFormat').text(design.extension.toUpperCase());
-            $('#viewDesignDate').text(formatDate(design.created_at));
-            $('#viewDesignUser').text(design.user ? design.user.name : 'Система');
-            $('#downloadDesignBtn').attr('href', design.download_url);
-            $('#deleteDesignBtn').data('design-id', design.id);
-            
-            // Подготавливаем предпросмотр в зависимости от типа файла
-            const previewContainer = $('#designPreviewContent');
-            previewContainer.empty();
-            
-            const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(design.extension.toLowerCase());
-            const isPdf = design.extension.toLowerCase() === 'pdf';
-            
-            if (isImage) {
-                previewContainer.html(`<img src="${design.url}" class="img-fluid rounded" alt="${design.name}">`);
-            } else if (isPdf) {
-                previewContainer.html(`<iframe src="${design.url}" width="100%" height="400" class="border rounded"></iframe>`);
-            } else {
-                // Для других типов файлов показываем иконку
-                const iconClass = getFileIconClass(design.extension);
-                previewContainer.html(`
-                    <div class="file-icon-large">
-                        <i class="${iconClass} fa-5x text-primary"></i>
-                        <p class="mt-3">${design.extension.toUpperCase()} файл</p>
-                        <p class="text-muted">Предпросмотр недоступен</p>
-                    </div>
-                `);
-            }
-            
-            $('#viewDesignModal').modal('show');
-        },
-        error: function(xhr, status, error) {
-            console.error('Ошибка при получении данных дизайн-файла:', error);
-            showMessage('Не удалось загрузить данные дизайн-файла', 'error');
-        }
-    });
-}
-
-// Вспомогательные функции
-function showDesignPreview(files) {
-    const container = $('#designPreview');
-    container.empty();
-    
-    if (!files || files.length === 0) return;
-    
-    Array.from(files).forEach((file, index) => {
-        const extension = file.name.split('.').pop().toLowerCase();
-        const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension);
-        const iconClass = getFileIconClass(extension);
-        
-        if (isImage) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const preview = $(`
-                    <div class="position-relative d-inline-block me-2 mb-2">
-                        <img src="${e.target.result}" class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover;">
-                        <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 rounded-circle p-1" style="width: 20px; height: 20px; font-size: 10px;" onclick="removeDesignPreview(this, ${index})">
-                            <i class="bi bi-x"></i>
-                        </button>
-                        <small class="d-block text-muted text-center mt-1" style="font-size: 10px; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${file.name}">
-                            ${file.name}
-                        </small>
-                    </div>
-                `);
-                container.append(preview);
-            };
-            reader.readAsDataURL(file);
-        } else {
-            // Для не-изображений показываем иконку
-            const preview = $(`
-                <div class="position-relative d-inline-block me-2 mb-2">
-                    <div class="file-icon-wrapper img-thumbnail d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
-                        <i class="${iconClass} fa-2x"></i>
-                        <span class="file-extension">${extension}</span>
-                    </div>
-                    <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 rounded-circle p-1" style="width: 20px; height: 20px; font-size: 10px;" onclick="removeDesignPreview(this, ${index})">
-                        <i class="bi bi-x"></i>
-                    </button>
-                    <small class="d-block text-muted text-center mt-1" style="font-size: 10px; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${file.name}">
-                        ${file.name}
-                    </small>
-                </div>
-            `);
-            container.append(preview);
-        }
-    });
-}
-
-function removeDesignPreview(button, index) {
-    const designInput = document.getElementById('designInput');
-    if (designInput && designInput.files) {
-        const dt = new DataTransfer();
-        Array.from(designInput.files).forEach((file, i) => {
-            if (i !== index) {
-                dt.items.add(file);
-            }
+    // Обработчик клика по кнопке выбора файлов
+    const selectButton = document.getElementById('selectDesignFilesBtn');
+    if (selectButton && !selectButton._designClickHandlerAttached) {
+        selectButton._designClickHandlerAttached = true;
+        selectButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🖱️ Клик по кнопке выбора файлов дизайна');
+            fileInput.click();
         });
-        designInput.files = dt.files;
-        $(designInput).trigger('change');
     }
-}
 
-function getFileIconClass(extension) {
-    const iconMap = {
-        'pdf': 'bi bi-file-earmark-pdf',
-        'doc': 'bi bi-file-earmark-word',
-        'docx': 'bi bi-file-earmark-word',
-        'xls': 'bi bi-file-earmark-excel',
-        'xlsx': 'bi bi-file-earmark-excel',
-        'ppt': 'bi bi-file-earmark-ppt',
-        'pptx': 'bi bi-file-earmark-ppt',
-        'txt': 'bi bi-file-earmark-text',
-        'zip': 'bi bi-file-earmark-zip',
-        'rar': 'bi bi-file-earmark-zip',
-        'psd': 'bi bi-file-earmark-image',
-        'ai': 'bi bi-file-earmark-image',
-        'indd': 'bi bi-file-earmark-image',
-        'dwg': 'bi bi-file-earmark-richtext',
-        'skp': 'bi bi-cube',
-        '3ds': 'bi bi-box',
-        'max': 'bi bi-box',
-    };
-    
-    return iconMap[extension] || 'bi bi-file-earmark';
-}
-
-function getDesignTypeName(type) {
-    const types = {
-        '3d': '3D визуализация',
-        'layout': 'Планировка',
-        'sketch': 'Эскиз',
-        'render': 'Рендер',
-        'draft': 'Черновик',
-        'concept': 'Концепт',
-        'detail': 'Детализация',
-        'material': 'Материалы',
-        'other': 'Другое'
-    };
-    
-    return types[type] || 'Не указано';
-}
-
-function getDesignRoomName(room) {
-    const rooms = {
-        'kitchen': 'Кухня',
-        'living_room': 'Гостиная',
-        'bedroom': 'Спальня',
-        'bathroom': 'Ванная',
-        'toilet': 'Туалет',
-        'hallway': 'Прихожая',
-        'all': 'Все помещения',
-        'other': 'Другое'
-    };
-    
-    return rooms[room] || 'Не указано';
-}
-
-function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
-
-function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Байт';
-    const k = 1024;
-    const sizes = ['Байт', 'КБ', 'МБ', 'ГБ'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
-
-// Функция для отображения сообщений
-function showMessage(message, type = 'info') {
-    let bgClass = 'bg-info';
-    let icon = 'bi-info-circle';
-    
-    if (type === 'success') {
-        bgClass = 'bg-success';
-        icon = 'bi-check-circle';
-    } else if (type === 'error') {
-        bgClass = 'bg-danger';
-        icon = 'bi-exclamation-circle';
-    } else if (type === 'warning') {
-        bgClass = 'bg-warning';
-        icon = 'bi-exclamation-triangle';
+    // Обработка выбранных файлов
+    function handleFileSelection(files) {
+        console.log('📁 Обработка выбранных файлов:', files.length);
+        
+        if (files.length === 0) return;
+        
+        // Очищаем предыдущий выбор перед добавлением новых файлов
+        selectedFiles = Array.from(files);
+        console.log('📋 Обновлен список файлов:', selectedFiles.map(f => f.name));
+        
+        displaySelectedFiles();
+        updateUploadButton();
     }
-    
-    const toast = $(`
-        <div class="toast align-items-center ${bgClass} text-white" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="d-flex">
-                <div class="toast-body">
-                    <i class="bi ${icon} me-2"></i>${message}
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Закрыть"></button>
-            </div>
-        </div>
-    `);
-    
-    $('.toast-container').append(toast);
-    const bsToast = new bootstrap.Toast(toast[0]);
-    bsToast.show();
-    
-    setTimeout(() => {
-        toast.remove();
-    }, 5000);
-}
 
-// Дополнительная проверка и восстановление projectId при загрузке модального окна
-$(document).ready(function() {
-    console.log('=== ПРОВЕРКА PROJECT ID В DESIGN MODAL ===');
-    
-    // Проверяем projectId в форме
-    const formProjectId = $('#designProjectId').val();
-    console.log('Project ID в форме дизайна:', formProjectId);
-    
-    // Проверяем глобальный projectId
-    const globalProjectId = window.projectId;
-    console.log('Глобальный Project ID:', globalProjectId);
-    
-    // Проверяем projectId в modalManager
-    const modalManagerProjectId = window.modalManager ? window.modalManager.projectId : null;
-    console.log('Project ID в modalManager:', modalManagerProjectId);
-    
-    // Если в форме нет projectId, попытаемся восстановить его
-    if (!formProjectId || formProjectId === '') {
-        console.warn('Project ID не установлен в форме дизайна, пытаемся восстановить...');
-        
-        // Попробуем взять из различных источников
-        let recoveredProjectId = null;
-        
-        if (globalProjectId && globalProjectId !== 'null') {
-            recoveredProjectId = globalProjectId;
-            console.log('Восстановлен Project ID из window.projectId:', recoveredProjectId);
-        } else if (modalManagerProjectId && modalManagerProjectId !== 'null') {
-            recoveredProjectId = modalManagerProjectId;
-            console.log('Восстановлен Project ID из modalManager:', recoveredProjectId);
+    // Отображение выбранных файлов
+    function displaySelectedFiles() {
+        if (selectedFiles.length === 0) {
+            fileList.style.display = 'none';
+            return;
         }
-        
-        // Устанавливаем восстановленный projectId в форму
-        if (recoveredProjectId) {
-            $('#designProjectId').val(recoveredProjectId);
-            console.log('Project ID установлен в форму дизайна:', recoveredProjectId);
+
+        fileItems.innerHTML = '';
+        selectedFiles.forEach((file, index) => {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item d-flex justify-content-between align-items-center p-3 border rounded mb-2';
             
-            // Также обновляем DesignManagerFixed если он существует
-            if (window.DesignManagerFixed) {
-                window.DesignManagerFixed.projectId = recoveredProjectId;
-                console.log('Project ID обновлен в DesignManagerFixed:', recoveredProjectId);
-            }
-        } else {
-            console.error('НЕ УДАЛОСЬ ВОССТАНОВИТЬ PROJECT ID ДЛЯ ДИЗАЙНА! Проверьте конфигурацию.');
-        }
-    } else {
-        console.log('Project ID корректно установлен в форме дизайна:', formProjectId);
+            fileItem.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-${getDesignIcon(file.type, file.name)} me-3 text-primary"></i>
+                    <div>
+                        <div class="fw-medium">${file.name}</div>
+                        <small class="text-muted">${formatFileSize(file.size)}</small>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeDesignFile(${index})">
+                    <i class="bi bi-trash"></i>
+                </button>
+            `;
+            
+            fileItems.appendChild(fileItem);
+        });
+
+        fileList.style.display = 'block';
+    }
+
+    // Получение иконки для файла дизайна
+    function getDesignIcon(fileType, fileName) {
+        const extension = fileName.split('.').pop().toLowerCase();
         
-        // Убедимся, что DesignManagerFixed также имеет правильный projectId
-        if (window.DesignManagerFixed && (!window.DesignManagerFixed.projectId || window.DesignManagerFixed.projectId === 'null')) {
-            window.DesignManagerFixed.projectId = formProjectId;
-            console.log('Project ID синхронизирован с DesignManagerFixed:', formProjectId);
+        if (fileType.startsWith('image/')) {
+            return 'file-earmark-image';
+        }
+        
+        switch (extension) {
+            case 'psd':
+                return 'file-earmark-image';
+            case 'ai':
+                return 'vector-pen';
+            case 'sketch':
+                return 'pencil-square';
+            case 'fig':
+                return 'file-earmark-binary';
+            case 'dwg':
+            case 'dxf':
+                return 'blueprint';
+            case '3ds':
+            case 'max':
+                return 'box';
+            case 'pdf':
+                return 'file-earmark-pdf';
+            default:
+                return 'file-earmark';
         }
     }
-});
+
+    // Удаление файла из списка
+    window.removeDesignFile = function(index) {
+        selectedFiles.splice(index, 1);
+        displaySelectedFiles();
+        updateUploadButton();
+        
+        if (selectedFiles.length === 0) {
+            fileInput.value = '';
+        }
+    };
+
+    // Обновление состояния кнопки загрузки
+    function updateUploadButton() {
+        uploadBtn.disabled = selectedFiles.length === 0;
+    }
+
+    // Обработчик кнопки загрузки
+    if (uploadBtn && !uploadBtn._designClickHandlerAttached) {
+        uploadBtn._designClickHandlerAttached = true;
+        uploadBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (selectedFiles.length === 0) return;
+            uploadFiles();
+        });
+    }
+
+    // Загрузка файлов
+    function uploadFiles() {
+        console.log('⬆️ Начинаем загрузку файлов дизайна...');
+        
+        const projectId = $('#designProjectId').val();
+        if (!projectId) {
+            console.error('❌ Project ID не найден');
+            if (window.modalManager) {
+                window.modalManager.showErrorToast('Ошибка: не найден ID проекта');
+            }
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('project_id', projectId);
+        formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
+
+        // Добавляем файлы
+        selectedFiles.forEach((file, index) => {
+            formData.append('files[]', file);
+        });
+
+        // Добавляем метаданные
+        const designType = getDesignTypeValue();
+        const room = getRoomValue();
+        const style = getStyleValue();
+        const description = $('#designDescription').val();
+
+        if (designType) formData.append('type', designType);
+        if (room) formData.append('room', room);
+        if (style) formData.append('style', style);
+        if (description) formData.append('description', description);
+
+        console.log('📦 Данные для отправки:', {
+            projectId,
+            filesCount: selectedFiles.length,
+            designType,
+            room,
+            style,
+            description
+        });
+
+        // Показываем прогресс (имитация)
+        showDesignUploadProgress();
+        uploadBtn.disabled = true;
+
+        // Простое уведомление вместо AJAX запроса
+        setTimeout(() => {
+            console.log('✅ Загрузка дизайн-файлов временно отключена');
+            
+            hideDesignUploadProgress();
+            
+            // Очищаем выбранные файлы и состояние формы
+            selectedFiles = [];
+            if (fileInput) fileInput.value = '';
+            updateSelectedFilesDisplay();
+            
+            if (window.modalManager) {
+                window.modalManager.showToast('Функция загрузки дизайн-файлов временно отключена', 'info');
+                window.modalManager.closeActiveModal();
+            } else {
+                alert('Функция загрузки дизайн-файлов временно отключена');
+            }
+            
+            // Перезагружаем вкладку дизайна
+            if (typeof loadDesignFiles === 'function') {
+                loadDesignFiles();
+            } else if (window.location.pathname.includes('/design')) {
+                // location.reload(); // Отключаем перезагрузку страницы
+            }
+            
+            uploadBtn.disabled = false;
+        }, 1500);
+    }
+
+    // Получение значения типа дизайна (с учетом кастомного)
+    function getDesignTypeValue() {
+        const select = document.getElementById('designTypeSelect');
+        const input = document.getElementById('designType');
+        
+        if (select.value === 'custom' && input.style.display !== 'none') {
+            return input.value.trim();
+        }
+        return select.value;
+    }
+
+    // Получение значения помещения (с учетом кастомного)
+    function getRoomValue() {
+        const select = document.getElementById('designRoomSelect');
+        const input = document.getElementById('designRoom');
+        
+        if (select.value === 'custom' && input.style.display !== 'none') {
+            return input.value.trim();
+        }
+        return select.value;
+    }
+
+    // Получение значения стиля (с учетом кастомного)
+    function getStyleValue() {
+        const select = document.getElementById('designStyleSelect');
+        const input = document.getElementById('designStyle');
+        
+        if (select.value === 'custom' && input.style.display !== 'none') {
+            return input.value.trim();
+        }
+        return select.value;
+    }
+
+    function showDesignUploadProgress() {
+        document.getElementById('designUploadProgress').style.display = 'block';
+    }
+
+    function hideDesignUploadProgress() {
+        document.getElementById('designUploadProgress').style.display = 'none';
+    }
+
+    function updateDesignUploadProgress(percent) {
+        const progressBar = document.getElementById('designProgressBar');
+        const progressText = document.getElementById('designProgressText');
+        
+        progressBar.style.width = percent + '%';
+        progressText.textContent = Math.round(percent) + '%';
+    }
+
+    // Очистка состояния при закрытии модального окна
+    $('#uploadDesignModal').on('hidden.bs.modal', function() {
+        console.log('🚪 Модальное окно дизайна закрыто, очищаем состояние...');
+        
+        // Очищаем выбранные файлы
+        selectedFiles = [];
+        fileInput.value = '';
+        
+        // Скрываем список файлов
+        fileList.style.display = 'none';
+        fileItems.innerHTML = '';
+        
+        // Сбрасываем форму
+        document.getElementById('uploadDesignForm').reset();
+        
+        // Скрываем кастомные поля
+        document.getElementById('designType').style.display = 'none';
+        document.getElementById('designRoom').style.display = 'none';
+        document.getElementById('designStyle').style.display = 'none';
+        
+        // Скрываем прогресс
+        hideDesignUploadProgress();
+        
+        // Активируем кнопку загрузки
+        updateUploadButton();
+        
+        console.log('✨ Состояние модального окна дизайна очищено');
+    });
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+}
+
+// Функции для управления кастомными полями типа дизайна
+function handleDesignTypeChange() {
+    const select = document.getElementById('designTypeSelect');
+    const input = document.getElementById('designType');
+    
+    if (select.value === 'custom') {
+        toggleCustomDesignType();
+    } else {
+        input.style.display = 'none';
+        input.value = '';
+    }
+}
+
+function toggleCustomDesignType() {
+    const select = document.getElementById('designTypeSelect');
+    const input = document.getElementById('designType');
+    
+    if (input.style.display === 'none' || input.style.display === '') {
+        input.style.display = 'block';
+        input.focus();
+        select.value = 'custom';
+    } else {
+        input.style.display = 'none';
+        input.value = '';
+        select.value = '';
+    }
+}
+
+// Функции для управления кастомными полями помещения
+function handleDesignRoomChange() {
+    const select = document.getElementById('designRoomSelect');
+    const input = document.getElementById('designRoom');
+    
+    if (select.value === 'custom') {
+        toggleCustomDesignRoom();
+    } else {
+        input.style.display = 'none';
+        input.value = '';
+    }
+}
+
+function toggleCustomDesignRoom() {
+    const select = document.getElementById('designRoomSelect');
+    const input = document.getElementById('designRoom');
+    
+    if (input.style.display === 'none' || input.style.display === '') {
+        input.style.display = 'block';
+        input.focus();
+        select.value = 'custom';
+    } else {
+        input.style.display = 'none';
+        input.value = '';
+        select.value = '';
+    }
+}
+
+// Функции для управления кастомными полями стиля
+function handleDesignStyleChange() {
+    const select = document.getElementById('designStyleSelect');
+    const input = document.getElementById('designStyle');
+    
+    if (select.value === 'custom') {
+        toggleCustomDesignStyle();
+    } else {
+        input.style.display = 'none';
+        input.value = '';
+    }
+}
+
+function toggleCustomDesignStyle() {
+    const select = document.getElementById('designStyleSelect');
+    const input = document.getElementById('designStyle');
+    
+    if (input.style.display === 'none' || input.style.display === '') {
+        input.style.display = 'block';
+        input.focus();
+        select.value = 'custom';
+    } else {
+        input.style.display = 'none';
+        input.value = '';
+        select.value = '';
+    }
+}
 </script>

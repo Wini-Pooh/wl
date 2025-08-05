@@ -19,6 +19,7 @@ class ProjectDocument extends Model
         'file_size',
         'mime_type',
         'document_type',
+        'importance',
         'category',
         'version',
         'document_date',

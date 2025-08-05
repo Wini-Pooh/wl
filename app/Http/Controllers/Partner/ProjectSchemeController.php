@@ -73,12 +73,30 @@ class ProjectSchemeController extends BaseFileController
      */
     protected function getAdditionalFileMetadata(Request $request, $fileName): array
     {
+        // Получаем тип схемы (базовый или кастомный)
+        $schemeType = $request->get('scheme_type');
+        if ($schemeType === 'custom' || empty($schemeType)) {
+            $schemeType = $request->get('custom_scheme_type', 'technical');
+        }
+        
+        // Получаем помещение (базовое или кастомное)
+        $room = $request->get('room');
+        if ($room === 'custom' || empty($room)) {
+            $room = $request->get('custom_room');
+        }
+        
+        // Получаем масштаб (базовый или кастомный)
+        $scale = $request->get('scale');
+        if ($scale === 'custom') {
+            $scale = $request->get('custom_scale');
+        }
+        
         return [
-            'scheme_type' => $request->get('scheme_type', 'technical'),
-            'room' => $request->get('room'),
-            'system' => $request->get('system'), // electrical, plumbing, hvac, etc.
-            'scale' => $request->get('scale'),
-            'revision' => $request->get('revision', '1.0'),
+            'scheme_type' => $schemeType,
+            'room' => $room,
+            'scale' => $scale,
+            'revision' => $request->get('version', '1.0'), // В БД хранится как revision
+            'description' => $request->get('description'),
             'engineer' => auth()->user()->name ?? null,
             'software' => $this->detectCADSoftware($fileName),
         ];
@@ -423,5 +441,45 @@ class ProjectSchemeController extends BaseFileController
     {
         $project = Project::findOrFail($projectId);
         return $this->download($project, $fileId);
+    }
+
+    /**
+     * Получить опции для фильтров схем - альтернативный метод для API с projectId
+     */
+    public function getFilterOptionsByProjectId(string $projectId)
+    {
+        $project = Project::findOrFail($projectId);
+        
+        try {
+            // Получаем уникальные типы схем и помещения для проекта
+            $schemes = $project->schemes()->select('scheme_type', 'room')->get();
+            
+            $schemeTypes = $schemes->pluck('scheme_type')
+                ->filter()
+                ->unique()
+                ->values()
+                ->toArray();
+            
+            $rooms = $schemes->pluck('room')
+                ->filter()
+                ->unique()
+                ->values()
+                ->toArray();
+            
+            return response()->json([
+                'scheme_types' => $schemeTypes,
+                'rooms' => $rooms,
+                'project_id' => $project->id
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Ошибка получения опций фильтров схем: ' . $e->getMessage());
+            
+            return response()->json([
+                'error' => 'Ошибка получения опций фильтров',
+                'scheme_types' => [],
+                'rooms' => []
+            ], 500);
+        }
     }
 }

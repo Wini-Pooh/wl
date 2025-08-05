@@ -21,6 +21,7 @@ class Kernel extends HttpKernel
         \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
         \App\Http\Middleware\TrimStrings::class,
         \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
+        \App\Http\Middleware\ForceHttps::class,
     ];
 
     /**
@@ -36,6 +37,7 @@ class Kernel extends HttpKernel
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            \App\Http\Middleware\CheckEmployeeSubscriptionInheritance::class,
         ],
 
         'api' => [
@@ -69,5 +71,10 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'role' => \App\Http\Middleware\RoleMiddleware::class,
         'employee' => \App\Http\Middleware\EmployeeAccessMiddleware::class,
+        'subscription.limits' => \App\Http\Middleware\CheckSubscriptionLimits::class,
+        'subscription.access' => \App\Http\Middleware\CheckFeatureAccess::class,
+        'upload.limits' => \App\Http\Middleware\CheckFileUploadLimits::class,
+        'employee.subscription' => \App\Http\Middleware\CheckEmployeeSubscriptionInheritance::class,
+        'project.access' => \App\Http\Middleware\CheckProjectAccess::class,
     ];
 }

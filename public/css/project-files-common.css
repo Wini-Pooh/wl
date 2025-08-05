@@ -1,0 +1,404 @@
+/* Общие стили для всех страниц проектов */
+
+/* Базовые стили для карточек */
+.project-file-card {
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.project-file-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+/* Стили для превью */
+.file-preview {
+    position: relative;
+    height: 200px;
+    overflow: hidden;
+    background: #f8f9fa;
+}
+
+.file-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.file-preview img:hover {
+    transform: scale(1.05);
+}
+
+/* Стили для иконок файлов */
+.file-icon-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.file-icon-container:hover {
+    background: #e9ecef;
+}
+
+.file-icon-container .file-icon {
+    font-size: 3rem;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+
+.file-icon-container .file-type {
+    font-size: 0.8rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+/* Стили для действий */
+.file-actions {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.project-file-card:hover .file-actions {
+    opacity: 1;
+}
+
+.file-actions .btn {
+    margin-left: 5px;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.file-actions .btn:hover {
+    transform: scale(1.1);
+}
+
+/* Стили для бейджей */
+.file-badges {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+}
+
+.file-badges .badge {
+    margin-right: 5px;
+    margin-bottom: 5px;
+}
+
+/* Стили для метаданных */
+.file-meta {
+    padding: 1rem;
+}
+
+.file-meta > div {
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.file-meta > div:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.file-meta .bi {
+    width: 20px;
+    text-align: center;
+    color: #6c757d;
+}
+
+/* Стили для фильтров */
+.filters-card .card-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    cursor: pointer;
+}
+
+.filters-card .card-header:hover {
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+}
+
+.filters-card .form-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.filters-card .form-select:focus, 
+.filters-card .form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+/* Стили для поиска */
+.search-input-group .input-group-text {
+    border-right: none;
+    background: white;
+}
+
+.search-input-group .form-control {
+    border-left: none;
+}
+
+.search-input-group .form-control:focus {
+    box-shadow: none;
+    border-color: #ced4da;
+}
+
+/* Стили для кнопок сброса */
+.btn-reset-filters {
+    border: 1px dashed #dc3545;
+    color: #dc3545;
+    background: transparent;
+}
+
+.btn-reset-filters:hover {
+    background: #dc3545;
+    color: white;
+    border-color: #dc3545;
+}
+
+/* Стили для пустого состояния */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6c757d;
+}
+
+.empty-state .display-1 {
+    font-size: 4rem;
+    opacity: 0.3;
+    margin-bottom: 1rem;
+}
+
+.empty-state h5 {
+    color: #495057;
+    margin-bottom: 1rem;
+}
+
+.empty-state p {
+    font-size: 0.9rem;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+/* Стили для модальных окон */
+.project-modal .modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.project-modal .modal-header .btn-close {
+    filter: invert(1);
+}
+
+.project-modal .upload-progress {
+    display: none;
+    margin-top: 1rem;
+    text-align: center;
+}
+
+.project-modal .upload-progress .spinner-border-sm {
+    margin-right: 0.5rem;
+}
+
+.project-modal #filePreview {
+    display: none;
+    margin-top: 1rem;
+}
+
+.project-modal #filePreview .list-group-item {
+    border: none;
+    background: #f8f9fa;
+    margin-bottom: 0.5rem;
+    border-radius: 8px;
+}
+
+/* Drag and drop стили */
+.upload-zone {
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.upload-zone:hover {
+    border-color: #28a745;
+    background-color: #f8f9fa;
+}
+
+.upload-zone.drag-over {
+    border-color: #007bff;
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+.upload-zone .upload-icon {
+    font-size: 3rem;
+    color: #6c757d;
+    margin-bottom: 1rem;
+}
+
+/* Стили для уведомлений */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1055;
+}
+
+.project-alert {
+    margin-bottom: 1rem;
+    border-radius: 8px;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Стили для пагинации */
+.pagination-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.pagination-wrapper .pagination {
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Адаптивные стили */
+@media (max-width: 768px) {
+    .file-preview {
+        height: 150px;
+    }
+    
+    .file-actions .btn {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .file-icon-container .file-icon {
+        font-size: 2rem;
+    }
+    
+    .upload-zone {
+        padding: 1rem;
+        min-height: 150px;
+    }
+    
+    .upload-zone .upload-icon {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .file-meta {
+        padding: 0.75rem;
+    }
+    
+    .file-badges {
+        position: static;
+        margin-bottom: 0.5rem;
+    }
+    
+    .file-actions {
+        position: static;
+        opacity: 1;
+        margin-top: 0.5rem;
+        text-align: center;
+    }
+}
+
+/* Анимации */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* Утилиты */
+.text-truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.file-size {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.file-size.large {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+.badge-type-primary {
+    background: rgba(0, 123, 255, 0.9);
+}
+
+.badge-type-success {
+    background: rgba(40, 167, 69, 0.9);
+}
+
+.badge-type-warning {
+    background: rgba(255, 193, 7, 0.9);
+    color: #212529;
+}
+
+.badge-type-danger {
+    background: rgba(220, 53, 69, 0.9);
+}
+
+.badge-type-secondary {
+    background: rgba(108, 117, 125, 0.9);
+}

@@ -1,25 +1,52 @@
 <!-- Финансовая аналитика -->
-<div class="row mb-4">
-    <!-- Основные метрики -->
-    <div class="col-lg-3 col-md-6 mb-3">
+<!-- Мобильная статистика -->
+<div class="stats-mobile-container d-md-none">
+    <div class="stats-mobile-header">
+        <i class="bi bi-cash-stack"></i>
+        <h6>Финансовая статистика</h6>
+    </div>
+    <div class="stats-mobile-grid">
+        <div class="stat-mobile-item stat-success">
+            <div class="stat-mobile-value">{{ number_format($data['project_revenue'] ?? 0, 0, ',', ' ') }}</div>
+            <div class="stat-mobile-label">Доходы (₽)</div>
+        </div>
+        <div class="stat-mobile-item stat-warning">
+            <div class="stat-mobile-value">{{ number_format($data['project_expenses'] ?? 0, 0, ',', ' ') }}</div>
+            <div class="stat-mobile-label">Расходы (₽)</div>
+        </div>
+        <div class="stat-mobile-item stat-primary">
+            <div class="stat-mobile-value">{{ number_format($data['net_profit'] ?? 0, 0, ',', ' ') }}</div>
+            <div class="stat-mobile-label">Прибыль (₽)</div>
+        </div>
+        <div class="stat-mobile-item stat-danger">
+            <div class="stat-mobile-value">{{ number_format($data['total_employee_debt'] ?? 0, 0, ',', ' ') }}</div>
+            <div class="stat-mobile-label">Долги (₽)</div>
+        </div>
+    </div>
+</div>
+
+<!-- Десктопная статистика -->
+<div class="row mb-4 g-3 d-none d-md-flex">
+    <!-- Основные метрики с адаптивной сеткой -->
+    <div class="col-6 col-lg-3">
         <div class="metric-card bg-revenue">
             <div class="metric-value">{{ number_format($data['project_revenue'] ?? 0, 0, ',', ' ') }} ₽</div>
             <div class="metric-label">Доходы</div>
         </div>
     </div>
-    <div class="col-lg-3 col-md-6 mb-3">
+    <div class="col-6 col-lg-3">
         <div class="metric-card bg-expenses">
             <div class="metric-value">{{ number_format($data['project_expenses'] ?? 0, 0, ',', ' ') }} ₽</div>
             <div class="metric-label">Расходы</div>
         </div>
     </div>
-    <div class="col-lg-3 col-md-6 mb-3">
+    <div class="col-6 col-lg-3">
         <div class="metric-card bg-profit">
             <div class="metric-value">{{ number_format($data['net_profit'] ?? 0, 0, ',', ' ') }} ₽</div>
             <div class="metric-label">Прибыль</div>
         </div>
     </div>
-    <div class="col-lg-3 col-md-6 mb-3">
+    <div class="col-6 col-lg-3">
         <div class="metric-card bg-projects">
             <div class="metric-value">{{ number_format($data['total_employee_debt'] ?? 0, 0, ',', ' ') }} ₽</div>
             <div class="metric-label">Задолженность</div>
@@ -27,14 +54,15 @@
     </div>
 </div>
 
-<div class="row">
+<div class="row g-3">
     <!-- Динамика доходов и расходов -->
-    <div class="col-lg-8 mb-4">
+    <div class="col-12 col-lg-8 mb-4">
         <div class="card chart-card">
             <div class="card-header">
                 <h6 class="mb-0">
                     <i class="bi bi-graph-up-arrow me-2"></i>
-                    Динамика доходов и расходов
+                    <span class="d-none d-md-inline">Динамика доходов и расходов</span>
+                    <span class="d-md-none">Динамика</span>
                 </h6>
             </div>
             <div class="card-body">
@@ -46,7 +74,7 @@
     </div>
 
     <!-- Распределение расходов по типам -->
-    <div class="col-lg-4 mb-4">
+    <div class="col-12 col-lg-4 mb-4">
         <div class="card chart-card">
             <div class="card-header">
                 <h6 class="mb-0">

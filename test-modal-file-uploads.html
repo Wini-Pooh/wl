@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест модальных окон для загрузки файлов</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .upload-zone {
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-zone:hover {
+            border-color: #007bff;
+            background-color: #f8f9fa;
+        }
+
+        .upload-zone.dragover {
+            border-color: #007bff;
+            background-color: #e7f1ff;
+        }
+
+        .file-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            background: white;
+        }
+
+        .file-item .file-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            border-radius: 4px;
+            background: #f8f9fa;
+        }
+
+        .file-item .file-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .file-item .file-name {
+            font-weight: 500;
+            margin-bottom: 2px;
+            word-break: break-all;
+        }
+
+        .file-item .file-size {
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+
+        .file-item .file-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container my-5">
+        <h1 class="mb-4">🧪 Тест модальных окон для загрузки файлов</h1>
+        
+        <!-- Проверка функциональности файлового input -->
+        <div class="test-section">
+            <h3>Тест 1: Простой файловый input</h3>
+            <p>Проверка базовой функциональности выбора файлов</p>
+            
+            <input type="file" id="testFileInput" multiple class="form-control mb-3">
+            <div id="testFileList" class="file-list" style="display: none;">
+                <h6>Выбранные файлы:</h6>
+                <div id="testFileItems"></div>
+            </div>
+            
+            <script>
+                document.getElementById('testFileInput').addEventListener('change', function(e) {
+                    const files = Array.from(e.target.files);
+                    console.log('📁 Выбрано файлов в тесте 1:', files.length);
+                    
+                    const fileList = document.getElementById('testFileList');
+                    const fileItems = document.getElementById('testFileItems');
+                    
+                    if (files.length === 0) {
+                        fileList.style.display = 'none';
+                        return;
+                    }
+                    
+                    fileItems.innerHTML = '';
+                    fileList.style.display = 'block';
+                    
+                    files.forEach((file, index) => {
+                        const fileItem = document.createElement('div');
+                        fileItem.className = 'file-item';
+                        fileItem.innerHTML = `
+                            <div class="file-icon">
+                                <i class="bi bi-file text-primary fs-4"></i>
+                            </div>
+                            <div class="file-info">
+                                <div class="file-name">${file.name}</div>
+                                <div class="file-size">${formatFileSize(file.size)}</div>
+                            </div>
+                        `;
+                        fileItems.appendChild(fileItem);
+                    });
+                });
+            </script>
+        </div>
+
+        <!-- Проверка drag & drop -->
+        <div class="test-section">
+            <h3>Тест 2: Drag & Drop зона</h3>
+            <p>Проверка функциональности перетаскивания файлов</p>
+            
+            <div class="upload-zone" id="testDragZone">
+                <div class="upload-content">
+                    <i class="bi bi-cloud-upload display-4 text-muted mb-3"></i>
+                    <h5>Перетащите файлы сюда</h5>
+                    <p class="text-muted mb-3">или нажмите для выбора файлов</p>
+                    <button type="button" class="btn btn-primary" id="testSelectBtn">
+                        <i class="bi bi-plus-lg me-1"></i>Выбрать файлы
+                    </button>
+                </div>
+            </div>
+            
+            <input type="file" id="testDragInput" multiple class="d-none">
+            
+            <div id="testDragFileList" class="file-list mt-4" style="display: none;">
+                <h6>Выбранные файлы:</h6>
+                <div id="testDragFileItems"></div>
+            </div>
+            
+            <script>
+                const testDragZone = document.getElementById('testDragZone');
+                const testDragInput = document.getElementById('testDragInput');
+                const testSelectBtn = document.getElementById('testSelectBtn');
+                const testDragFileList = document.getElementById('testDragFileList');
+                const testDragFileItems = document.getElementById('testDragFileItems');
+                
+                let testSelectedFiles = [];
+                
+                // Обработчики drag & drop
+                testDragZone.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    testDragZone.classList.add('dragover');
+                });
+
+                testDragZone.addEventListener('dragleave', function(e) {
+                    e.preventDefault();
+                    testDragZone.classList.remove('dragover');
+                });
+
+                testDragZone.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    testDragZone.classList.remove('dragover');
+                    
+                    const files = Array.from(e.dataTransfer.files);
+                    handleTestFileSelection(files);
+                });
+
+                // Обработчик выбора файлов
+                testDragInput.addEventListener('change', function(e) {
+                    const files = Array.from(e.target.files);
+                    handleTestFileSelection(files);
+                });
+
+                // Обработчик клика по кнопке
+                testSelectBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('🖱️ Клик по кнопке выбора файлов в тесте 2');
+                    testDragInput.click();
+                });
+
+                // Обработчик клика по зоне
+                testDragZone.addEventListener('click', function(e) {
+                    if (e.target === testDragZone || e.target.closest('.upload-content')) {
+                        testDragInput.click();
+                    }
+                });
+
+                function handleTestFileSelection(files) {
+                    console.log('📁 Выбрано файлов в тесте 2:', files.length);
+                    
+                    if (files.length === 0) return;
+                    
+                    testSelectedFiles = Array.from(files);
+                    displayTestFiles();
+                }
+
+                function displayTestFiles() {
+                    if (testSelectedFiles.length === 0) {
+                        testDragFileList.style.display = 'none';
+                        return;
+                    }
+
+                    testDragFileItems.innerHTML = '';
+                    testDragFileList.style.display = 'block';
+
+                    testSelectedFiles.forEach((file, index) => {
+                        const fileItem = document.createElement('div');
+                        fileItem.className = 'file-item';
+                        fileItem.innerHTML = `
+                            <div class="file-icon">
+                                <i class="bi bi-file text-primary fs-4"></i>
+                            </div>
+                            <div class="file-info">
+                                <div class="file-name">${file.name}</div>
+                                <div class="file-size">${formatFileSize(file.size)}</div>
+                            </div>
+                            <div class="file-actions">
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeTestFile(${index})">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </div>
+                        `;
+                        testDragFileItems.appendChild(fileItem);
+                    });
+                }
+
+                function removeTestFile(index) {
+                    testSelectedFiles.splice(index, 1);
+                    displayTestFiles();
+                }
+            </script>
+        </div>
+
+        <!-- Проверка в модальном окне -->
+        <div class="test-section">
+            <h3>Тест 3: Модальное окно</h3>
+            <p>Проверка функциональности загрузки файлов в модальном окне</p>
+            
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#testModal">
+                Открыть модальное окно
+            </button>
+        </div>
+    </div>
+
+    <!-- Тестовое модальное окно -->
+    <div class="modal fade" id="testModal" tabindex="-1" aria-labelledby="testModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="testModalLabel">
+                        <i class="bi bi-upload me-2"></i>Тест загрузки файлов в модальном окне
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="upload-zone" id="modalDragZone">
+                        <div class="upload-content">
+                            <i class="bi bi-cloud-upload display-4 text-muted mb-3"></i>
+                            <h5>Перетащите файлы сюда</h5>
+                            <p class="text-muted mb-3">или нажмите для выбора файлов</p>
+                            <input type="file" id="modalFileInput" multiple class="d-none">
+                            <button type="button" class="btn btn-primary" id="modalSelectBtn">
+                                <i class="bi bi-plus-lg me-1"></i>Выбрать файлы
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="modalFileList" class="file-list mt-4" style="display: none;">
+                        <h6>Выбранные файлы:</h6>
+                        <div id="modalFileItems"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary" id="modalUploadBtn" disabled>
+                        <i class="bi bi-upload me-1"></i>Загрузить файлы
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Инициализация модального окна
+        document.getElementById('testModal').addEventListener('shown.bs.modal', function () {
+            console.log('🔧 Инициализация обработчиков модального окна...');
+            
+            const modalDragZone = document.getElementById('modalDragZone');
+            const modalFileInput = document.getElementById('modalFileInput');
+            const modalSelectBtn = document.getElementById('modalSelectBtn');
+            const modalFileList = document.getElementById('modalFileList');
+            const modalFileItems = document.getElementById('modalFileItems');
+            const modalUploadBtn = document.getElementById('modalUploadBtn');
+            
+            let modalSelectedFiles = [];
+            
+            // Очищаем старые обработчики
+            const newModalDragZone = modalDragZone.cloneNode(true);
+            modalDragZone.parentNode.replaceChild(newModalDragZone, modalDragZone);
+            
+            const newModalFileInput = modalFileInput.cloneNode(true);
+            modalFileInput.parentNode.replaceChild(newModalFileInput, modalFileInput);
+            
+            const newModalSelectBtn = modalSelectBtn.cloneNode(true);
+            modalSelectBtn.parentNode.replaceChild(newModalSelectBtn, modalSelectBtn);
+            
+            // Получаем новые ссылки
+            const freshModalDragZone = document.getElementById('modalDragZone');
+            const freshModalFileInput = document.getElementById('modalFileInput');
+            const freshModalSelectBtn = document.getElementById('modalSelectBtn');
+            
+            // Обработчики drag & drop
+            freshModalDragZone.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                freshModalDragZone.classList.add('dragover');
+                console.log('📂 Dragover в модальном окне');
+            });
+
+            freshModalDragZone.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                freshModalDragZone.classList.remove('dragover');
+            });
+
+            freshModalDragZone.addEventListener('drop', function(e) {
+                e.preventDefault();
+                freshModalDragZone.classList.remove('dragover');
+                
+                const files = Array.from(e.dataTransfer.files);
+                console.log('📂 Drop в модальном окне:', files.length);
+                handleModalFileSelection(files);
+            });
+
+            // Обработчик выбора файлов
+            freshModalFileInput.addEventListener('change', function(e) {
+                const files = Array.from(e.target.files);
+                console.log('📂 Выбор файлов в модальном окне:', files.length);
+                handleModalFileSelection(files);
+            });
+
+            // Обработчик клика по кнопке
+            freshModalSelectBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🖱️ Клик по кнопке в модальном окне');
+                freshModalFileInput.click();
+            });
+
+            // Обработчик клика по зоне
+            freshModalDragZone.addEventListener('click', function(e) {
+                if (e.target === freshModalDragZone || e.target.closest('.upload-content')) {
+                    console.log('🖱️ Клик по зоне в модальном окне');
+                    freshModalFileInput.click();
+                }
+            });
+
+            function handleModalFileSelection(files) {
+                console.log('📁 Обработка файлов в модальном окне:', files.length);
+                
+                if (files.length === 0) return;
+                
+                modalSelectedFiles = Array.from(files);
+                displayModalFiles();
+                updateModalUploadButton();
+            }
+
+            function displayModalFiles() {
+                if (modalSelectedFiles.length === 0) {
+                    modalFileList.style.display = 'none';
+                    return;
+                }
+
+                modalFileItems.innerHTML = '';
+                modalFileList.style.display = 'block';
+
+                modalSelectedFiles.forEach((file, index) => {
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-item';
+                    fileItem.innerHTML = `
+                        <div class="file-icon">
+                            <i class="bi bi-file text-primary fs-4"></i>
+                        </div>
+                        <div class="file-info">
+                            <div class="file-name">${file.name}</div>
+                            <div class="file-size">${formatFileSize(file.size)}</div>
+                        </div>
+                        <div class="file-actions">
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeModalFile(${index})">
+                                <i class="bi bi-x"></i>
+                            </button>
+                        </div>
+                    `;
+                    modalFileItems.appendChild(fileItem);
+                });
+            }
+
+            function updateModalUploadButton() {
+                modalUploadBtn.disabled = modalSelectedFiles.length === 0;
+            }
+
+            window.removeModalFile = function(index) {
+                modalSelectedFiles.splice(index, 1);
+                displayModalFiles();
+                updateModalUploadButton();
+            };
+        });
+
+        // Общая функция форматирования размера файла
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        console.log('✅ Тестовая страница модальных окон загружена');
+    </script>
+</body>
+</html>

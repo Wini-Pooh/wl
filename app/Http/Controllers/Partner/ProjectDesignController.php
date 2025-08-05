@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Partner;
 
 use App\Models\Project;
 use App\Models\ProjectDesignFile;
+use App\Services\ImageProcessingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
@@ -11,12 +12,15 @@ use Illuminate\Support\Str;
 
 class ProjectDesignController extends BaseFileController
 {
-    public function __construct()
+    protected ImageProcessingService $imageProcessingService;
+
+    public function __construct(ImageProcessingService $imageProcessingService)
     {
         // Доступ к дизайну проектов для партнеров, сотрудников, прорабов, клиентов и админов
         // Сметчики НЕ имеют доступа к дизайну проектов (только к сметам)
         // Клиенты имеют доступ только на чтение (просмотр и скачивание)
         $this->middleware(['auth', 'role:partner,employee,foreman,client,admin']);
+        $this->imageProcessingService = $imageProcessingService;
     }
 
     /**
@@ -151,6 +155,7 @@ class ProjectDesignController extends BaseFileController
 
             // Валидация
             $request->validate([
+                'files' => 'required|array|max:10', // Максимум 10 файлов за раз
                 'files.*' => [
                     'required',
                     'file',
@@ -162,37 +167,47 @@ class ProjectDesignController extends BaseFileController
                 'style' => 'nullable|string|max:50',
                 'stage' => 'nullable|string|max:50',
                 'description' => 'nullable|string|max:1000',
+            ], [
+                'files.required' => 'Необходимо выбрать хотя бы один файл для загрузки.',
+                'files.*.required' => 'Файл не выбран.',
+                'files.*.file' => 'Загружаемый объект должен быть файлом.',
+                'files.*.max' => 'Размер файла не должен превышать :max КБ.',
+                'files.*.mimes' => 'Неподдерживаемый формат файла. Разрешены: ' . implode(', ', $this->allowedExtensions),
             ]);
 
             $uploadedFiles = [];
             $files = $request->file('files', []);
+            $successCount = 0;
+            $errors = [];
 
             foreach ($files as $file) {
-                $designFile = $this->createDesignFileRecord($project, $file, $request);
-                if ($designFile) {
-                    $uploadedFiles[] = $this->formatDesignResponse($designFile);
+                try {
+                    $designFile = $this->createDesignFileRecord($project, $file, $request);
+                    if ($designFile) {
+                        $uploadedFiles[] = $this->formatDesignResponse($designFile);
+                        $successCount++;
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Error uploading design file: ' . $e->getMessage());
+                    $errors[] = 'Ошибка загрузки файла ' . $file->getClientOriginalName() . ': ' . $e->getMessage();
                 }
             }
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Файлы дизайна успешно загружены',
-                'files' => $uploadedFiles,
-                'count' => count($uploadedFiles)
-            ]);
+            if ($successCount > 0) {
+                $message = "Успешно загружено файлов: {$successCount}";
+                if (count($errors) > 0) {
+                    $message .= '. Ошибки: ' . implode('; ', $errors);
+                }
+                return redirect()->back()->with('success', $message);
+            } else {
+                return redirect()->back()->with('error', 'Не удалось загрузить ни одного файла. ' . implode('; ', $errors));
+            }
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Ошибка валидации',
-                'errors' => $e->errors()
-            ], 422);
+            return redirect()->back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
             Log::error('Error uploading design files: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Ошибка загрузки файлов дизайна'
-            ], 500);
+            return redirect()->back()->with('error', 'Ошибка загрузки файлов дизайна: ' . $e->getMessage());
         }
     }
 
@@ -205,19 +220,14 @@ class ProjectDesignController extends BaseFileController
             $this->checkProjectAccess($project);
 
             $designFile = $project->designFiles()->findOrFail($designId);
+            $fileName = $designFile->original_name;
             $designFile->delete();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Файл дизайна успешно удален'
-            ]);
+            return redirect()->back()->with('success', "Файл дизайна \"{$fileName}\" успешно удален");
 
         } catch (\Exception $e) {
             Log::error('Error deleting design file: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Ошибка удаления файла дизайна'
-            ], 500);
+            return redirect()->back()->with('error', 'Ошибка удаления файла дизайна');
         }
     }
 
@@ -279,56 +289,125 @@ class ProjectDesignController extends BaseFileController
     private function createDesignFileRecord(Project $project, $file, Request $request): ?ProjectDesignFile
     {
         try {
-            $fileName = $this->generateFileName($file);
-            $directory = $this->getFileDirectory($project);
-            $filePath = $directory . '/' . $fileName;
-
-            // Сохраняем файл
-            $file->storeAs($directory, $fileName, 'public');
-
-            // Логирование для отладки
             Log::info('Creating design file record', [
                 'project_id' => $project->id,
                 'original_name' => $file->getClientOriginalName(),
+                'original_size' => $file->getSize(),
+                'mime_type' => $file->getMimeType(),
                 'design_type' => $request->get('type'),
                 'room' => $request->get('room'),
                 'description' => $request->get('description'),
-                'all_request_data' => $request->all()
             ]);
 
-            // Создаем запись в базе данных
-            $designFile = ProjectDesignFile::create([
-                'project_id' => $project->id,
-                'name' => $fileName,
-                'original_name' => $file->getClientOriginalName(),
-                'file_path' => $filePath,
-                'file_size' => $file->getSize(),
-                'mime_type' => $file->getMimeType(),
-                'design_type' => $request->get('type', 'concept'),
-                'room' => $request->get('room'),
-                'style' => $request->get('style'),
-                'stage' => $request->get('stage'),
-                'designer' => auth()->user()->name ?? null,
-                'software' => $this->detectSoftware($file->getClientOriginalName()),
-                'description' => $request->get('description'),
-                'uploaded_by' => auth()->id(),
-            ]);
+            $directory = $this->getFileDirectory($project);
+            
+            // Проверяем, является ли файл изображением
+            if ($this->imageProcessingService->isImageFile($file)) {
+                // Обрабатываем изображение
+                $baseFileName = $this->generateBaseFileName($file);
+                
+                Log::info('Processing design image with ImageProcessingService', [
+                    'base_filename' => $baseFileName,
+                    'directory' => $directory,
+                    'original_size' => $file->getSize()
+                ]);
 
-            // Логирование созданной записи
-            Log::info('Design file record created', [
-                'id' => $designFile->id,
-                'design_type' => $designFile->design_type,
-                'room' => $designFile->room,
-                'description' => $designFile->description
-            ]);
+                $processedImage = $this->imageProcessingService->processUploadedImage(
+                    $file, 
+                    $directory, 
+                    $baseFileName
+                );
+
+                // Создаем запись в базе данных с оптимизированными данными
+                $designFile = ProjectDesignFile::create([
+                    'project_id' => $project->id,
+                    'name' => $processedImage['original']['filename'],
+                    'original_name' => $file->getClientOriginalName(),
+                    'file_path' => $processedImage['original']['path'],
+                    'file_size' => $processedImage['original']['file_size'],
+                    'original_file_size' => $file->getSize(),
+                    'mime_type' => $processedImage['original']['mime_type'],
+                    'design_type' => $request->get('type', 'concept'),
+                    'room' => $request->get('room'),
+                    'style' => $request->get('style'),
+                    'stage' => $request->get('stage'),
+                    'designer' => auth()->user()->name ?? null,
+                    'software' => $this->detectSoftware($file->getClientOriginalName()),
+                    'description' => $request->get('description'),
+                    'uploaded_by' => auth()->id(),
+                    'is_optimized' => true,
+                    'optimization_data' => json_encode([
+                        'thumbnails' => $processedImage['thumbnails'],
+                        'original_dimensions' => $processedImage['original']['dimensions'] ?? null,
+                        'compression_ratio' => round((1 - $processedImage['original']['file_size'] / $file->getSize()) * 100, 2),
+                        'format_converted' => $processedImage['original']['format_changed']
+                    ])
+                ]);
+
+                Log::info('Design image processed and record created', [
+                    'design_file_id' => $designFile->id,
+                    'original_size' => $file->getSize(),
+                    'optimized_size' => $processedImage['original']['file_size'],
+                    'compression_ratio' => round((1 - $processedImage['original']['file_size'] / $file->getSize()) * 100, 2),
+                    'thumbnails_created' => count($processedImage['thumbnails'])
+                ]);
+
+            } else {
+                // Обрабатываем обычный файл (не изображение)
+                $fileName = $this->generateFileName($file);
+                $filePath = $directory . '/' . $fileName;
+
+                // Сохраняем файл
+                $file->storeAs($directory, $fileName, 'public');
+
+                // Создаем запись в базе данных
+                $designFile = ProjectDesignFile::create([
+                    'project_id' => $project->id,
+                    'name' => $fileName,
+                    'original_name' => $file->getClientOriginalName(),
+                    'file_path' => $filePath,
+                    'file_size' => $file->getSize(),
+                    'mime_type' => $file->getMimeType(),
+                    'design_type' => $request->get('type', 'concept'),
+                    'room' => $request->get('room'),
+                    'style' => $request->get('style'),
+                    'stage' => $request->get('stage'),
+                    'designer' => auth()->user()->name ?? null,
+                    'software' => $this->detectSoftware($file->getClientOriginalName()),
+                    'description' => $request->get('description'),
+                    'uploaded_by' => auth()->id(),
+                    'is_optimized' => false,
+                ]);
+
+                Log::info('Design file (non-image) record created', [
+                    'design_file_id' => $designFile->id,
+                    'file_size' => $file->getSize()
+                ]);
+            }
 
             return $designFile;
 
         } catch (\Exception $e) {
-            Log::error('Error creating design file record: ' . $e->getMessage());
-            Log::error('Request data: ' . json_encode($request->all()));
+            Log::error('Error creating design file record: ' . $e->getMessage(), [
+                'project_id' => $project->id,
+                'file_name' => $file->getClientOriginalName(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return null;
         }
+    }
+
+    /**
+     * Генерировать базовое имя файла без расширения
+     */
+    protected function generateBaseFileName($file): string
+    {
+        $name = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME));
+        $timestamp = now()->format('Y-m-d_H-i-s');
+        $random = Str::random(8);
+        
+        return "{$name}_{$timestamp}_{$random}";
     }
 
     /**
@@ -336,7 +415,7 @@ class ProjectDesignController extends BaseFileController
      */
     private function formatDesignResponse(ProjectDesignFile $designFile): array
     {
-        return [
+        $response = [
             'id' => $designFile->id,
             'name' => $designFile->original_name,
             'original_name' => $designFile->original_name,
@@ -363,9 +442,39 @@ class ProjectDesignController extends BaseFileController
             'created_at' => $designFile->created_at->format('c'),
             'updated_at' => $designFile->updated_at->format('c'),
             'is_image' => $designFile->isImage(),
+            'is_optimized' => $designFile->is_optimized ?? false,
             // Добавляем категорию для совместимости с файл-менеджером
             'category' => $designFile->design_type_name . ($designFile->room_name ? ' - ' . $designFile->room_name : ''),
         ];
+
+        // Добавляем информацию об оптимизации для изображений
+        if ($designFile->is_optimized && $designFile->isImage()) {
+            $response['optimization'] = [
+                'original_size' => $designFile->original_file_size,
+                'optimized_size' => $designFile->file_size,
+                'compression_ratio' => $designFile->compression_ratio,
+                'thumbnails' => $designFile->optimization_data['thumbnails'] ?? [],
+                'format_converted' => $designFile->optimization_data['format_converted'] ?? false,
+            ];
+
+            // Добавляем URLs для миниатюр
+            if (isset($designFile->optimization_data['thumbnails'])) {
+                $response['thumbnails'] = [];
+                foreach ($designFile->optimization_data['thumbnails'] as $size => $thumbnail) {
+                    $response['thumbnails'][$size] = [
+                        'url' => asset('storage/' . $thumbnail['path']),
+                        'width' => $thumbnail['dimensions']['width'],
+                        'height' => $thumbnail['dimensions']['height'],
+                        'size' => $thumbnail['file_size'],
+                    ];
+                }
+            }
+
+            // Используем миниатюру для preview URL если доступна
+            $response['thumbnail_url'] = $designFile->thumbnail_url;
+        }
+
+        return $response;
     }
 
     /**
@@ -448,5 +557,88 @@ class ProjectDesignController extends BaseFileController
     {
         $project = Project::findOrFail($projectId);
         return $this->download($project, $fileId);
+    }
+
+    /**
+     * Получить опции для фильтров дизайна (кастомные значения)
+     */
+    public function getFilterOptions(Request $request, Project $project)
+    {
+        try {
+            $this->checkProjectAccess($project);
+
+            // Получаем уникальные значения для каждого поля
+            // Используем прямой запрос к модели вместо отношения, чтобы избежать проблем с ORDER BY + DISTINCT
+            $types = ProjectDesignFile::where('project_id', $project->id)
+                ->whereNotNull('design_type')
+                ->where('design_type', '!=', '')
+                ->distinct()
+                ->pluck('design_type')
+                ->filter()
+                ->sort()
+                ->values();
+
+            $rooms = ProjectDesignFile::where('project_id', $project->id)
+                ->whereNotNull('room')
+                ->where('room', '!=', '')
+                ->distinct()
+                ->pluck('room')
+                ->filter()
+                ->sort()
+                ->values();
+
+            $styles = ProjectDesignFile::where('project_id', $project->id)
+                ->whereNotNull('style')
+                ->where('style', '!=', '')
+                ->distinct()
+                ->pluck('style')
+                ->filter()
+                ->sort()
+                ->values();
+
+            // Логирование для отладки
+            Log::info('Design filter options loaded', [
+                'project_id' => $project->id,
+                'types_count' => $types->count(),
+                'rooms_count' => $rooms->count(),
+                'styles_count' => $styles->count(),
+                'types' => $types->toArray(),
+                'rooms' => $rooms->toArray(),
+                'styles' => $styles->toArray()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'types' => $types,
+                    'rooms' => $rooms,
+                    'styles' => $styles
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Ошибка получения опций фильтров дизайна: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка получения опций фильтров'
+            ], 500);
+        }
+    }
+
+    /**
+     * Получить опции для фильтров дизайна - альтернативный метод для API с projectId
+     */
+    public function getFilterOptionsByProjectId(Request $request, string $projectId)
+    {
+        try {
+            $project = Project::findOrFail($projectId);
+            return $this->getFilterOptions($request, $project);
+        } catch (\Exception $e) {
+            Log::error('Ошибка получения опций фильтров дизайна по projectId: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Проект не найден или нет доступа'
+            ], 404);
+        }
     }
 }

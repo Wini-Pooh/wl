@@ -34,6 +34,16 @@ Route::middleware(['auth:web'])->get('/test-auth', function (Request $request) {
     ]);
 });
 
+// Тестовый маршрут для проверки API дизайна
+Route::middleware(['auth:web'])->get('/test-design-api/{projectId}', function (Request $request, $projectId) {
+    return response()->json([
+        'success' => true,
+        'project_id' => $projectId,
+        'user' => $request->user()->email ?? 'no user',
+        'message' => 'API работает'
+    ]);
+});
+
 Route::middleware(['auth:web', 'role:partner,admin'])->get('/test-role', function (Request $request) {
     return response()->json([
         'authenticated' => true,
@@ -51,12 +61,18 @@ Route::prefix('projects/{project}')->group(function () {
 
 // Маршруты для загрузки файлов (с веб-аутентификацией)
 // Поддержка как web, так и sanctum аутентификации для AJAX запросов
-Route::middleware(['auth:web', 'role:partner,admin'])->prefix('projects/{projectId}')->group(function () {
+Route::middleware(['auth:web', 'role:partner,employee,foreman,client,admin'])->prefix('projects/{projectId}')->group(function () {
     // Загрузка файлов
     Route::post('/photos', [ProjectPhotoController::class, 'storeByProjectId']);
     Route::post('/documents', [ProjectDocumentController::class, 'storeByProjectId']);
     Route::post('/design', [ProjectDesignController::class, 'storeByProjectId']); // изменено с designs на design
     Route::post('/schemes', [ProjectSchemeController::class, 'storeByProjectId']);
+    
+    // Получение опций для фильтров дизайна (должно быть ПЕРЕД общими маршрутами design/{id})
+    Route::get('/design/filter-options', [ProjectDesignController::class, 'getFilterOptionsByProjectId']);
+    
+    // Получение опций для фильтров схем (должно быть ПЕРЕД общими маршрутами schemes/{id})
+    Route::get('/schemes/filter-options', [ProjectSchemeController::class, 'getFilterOptionsByProjectId']);
     
     // Получение файлов
     Route::get('/photos/{id}', [ProjectPhotoController::class, 'showByProjectId']);
@@ -97,7 +113,7 @@ Route::middleware(['auth:web'])->group(function () {
     Route::get('/projects/list', [DocumentTemplateController::class, 'getProjects']);
     Route::get('/employees/list', [DocumentTemplateController::class, 'getEmployees']);
     // Данные конкретного проекта для автозаполнения
-    Route::get('/projects/{projectId}/data', [\App\Http\Controllers\DocumentProjectController::class, 'getProjectData']);
+    Route::get('/projects/{projectId}/data', [DocumentTemplateController::class, 'getProjectData']);
 });
 
 // Маршруты для системы шаблонов документов
@@ -142,4 +158,19 @@ Route::middleware(['auth:web'])->prefix('partner/document-templates')->group(fun
     // Создание документа
     Route::post('/create', [DocumentTemplateController::class, 'createFromTemplate']);
     Route::post('/create-from-template', [DocumentTemplateController::class, 'createFromTemplate']);
+});
+
+// Маршруты API для работы с финансовыми данными проектов
+Route::middleware(['auth:web', 'role:partner,employee,foreman,client,admin'])->prefix('finance-api/projects/{projectId}')->group(function () {
+    // Маршруты для получения частей финансовых вкладок
+    Route::get('/materials-partial', [App\Http\Controllers\Partner\ProjectFinanceController::class, 'getMaterialsPartial']);
+    Route::get('/works-partial', [App\Http\Controllers\Partner\ProjectFinanceController::class, 'getWorksPartial']);
+    Route::get('/transports-partial', [App\Http\Controllers\Partner\ProjectFinanceController::class, 'getTransportsPartial']);
+});
+
+// ВРЕМЕННОЕ РЕШЕНИЕ: Дублирующие маршруты БЕЗ префикса api для совместимости
+Route::middleware(['auth:web', 'role:partner,employee,foreman,client,admin'])->prefix('finance-api/projects/{projectId}')->group(function () {
+    Route::get('/materials-partial', [App\Http\Controllers\Partner\ProjectFinanceController::class, 'getMaterialsPartial']);
+    Route::get('/works-partial', [App\Http\Controllers\Partner\ProjectFinanceController::class, 'getWorksPartial']);
+    Route::get('/transports-partial', [App\Http\Controllers\Partner\ProjectFinanceController::class, 'getTransportsPartial']);
 });

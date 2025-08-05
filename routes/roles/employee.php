@@ -21,8 +21,12 @@ Route::middleware(['auth', 'employee:employee,admin'])->prefix('employee')->name
         Route::post('/search-by-phone', [App\Http\Controllers\Employee\ProjectController::class, 'searchByPhone'])->name('search-by-phone');
         
         // Создание и редактирование проектов
-        Route::get('/create', [App\Http\Controllers\Employee\ProjectController::class, 'create'])->name('create');
-        Route::post('/', [App\Http\Controllers\Employee\ProjectController::class, 'store'])->name('store');
+        Route::get('/create', [App\Http\Controllers\Employee\ProjectController::class, 'create'])
+            ->middleware('subscription.limits:active_projects')
+            ->name('create');
+        Route::post('/', [App\Http\Controllers\Employee\ProjectController::class, 'store'])
+            ->middleware('subscription.limits:active_projects')
+            ->name('store');
         Route::get('/{project}/edit', [App\Http\Controllers\Employee\ProjectController::class, 'edit'])->name('edit');
         Route::put('/{project}', [App\Http\Controllers\Employee\ProjectController::class, 'update'])->name('update');
         Route::delete('/{project}', [App\Http\Controllers\Employee\ProjectController::class, 'destroy'])->name('destroy');
@@ -49,6 +53,11 @@ Route::middleware(['auth', 'employee:employee,admin'])->prefix('employee')->name
             
             // Финансовая сводка
             Route::get('finance/summary', [App\Http\Controllers\Employee\ProjectFinanceController::class, 'getFinanceSummary'])->name('finance.summary');
+            
+            // Частичные данные для AJAX
+            Route::get('finance/works-partial', [App\Http\Controllers\Employee\ProjectFinanceController::class, 'getWorksPartial'])->name('finance.works.partial');
+            Route::get('finance/materials-partial', [App\Http\Controllers\Employee\ProjectFinanceController::class, 'getMaterialsPartial'])->name('finance.materials.partial');
+            Route::get('finance/transports-partial', [App\Http\Controllers\Employee\ProjectFinanceController::class, 'getTransportsPartial'])->name('finance.transports.partial');
         });
     });
     

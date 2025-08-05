@@ -1,4 +1,4 @@
-@extends('layouts.auth')
+@extends('layouts.app')
 
 @section('head')
     <script src="{{ asset('js/phone-mask.js') }}"></script>
@@ -84,4 +84,19 @@
     <div class="mt-4">
         <i class="bi bi-tools" style="font-size: 4rem; opacity: 0.7;"></i>
     </div>
+@endsection
+
+@section('scripts')
+    <script>
+        // Дополнительная инициализация маски телефона для страницы входа
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔐 Инициализация страницы входа...');
+            
+            // Убеждаемся, что маска применена
+            const phoneInput = document.getElementById('phone');
+            if (phoneInput && typeof window.initPhoneMask === 'function') {
+                window.initPhoneMask(phoneInput);
+            }
+        });
+    </script>
 @endsection

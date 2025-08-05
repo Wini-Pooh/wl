@@ -10,8 +10,8 @@
     <title>{{ config('app.name', 'Laravel') }}</title>
 
     <!-- Fonts -->
-    <link rel="dns-prefetch" href="//fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=Nunito:400,500,600,700&display=swap" rel="stylesheet">
+  <!-- Основной шрифт Inter для единого дизайна -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
@@ -19,14 +19,26 @@
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
     
+    <!-- ЕДИНАЯ ДИЗАЙН-СИСТЕМА - основные стили -->
+   
+    <!-- Дополнительные стили для специфических компонентов -->
+    @stack('styles')
+    @yield('styles')
+    
+    <!-- Vite Assets для JS -->
+    @vite(['resources/js/app.js', 'resources/css/app.css'])
+    
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     
     <!-- Bootstrap JS with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- Vite Assets -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <!-- AJAX Helper -->
+    <script src="{{ asset('js/ajax-helper.js') }}"></script>
+    
+    <!-- Mobile Enhancements -->
+    <script src="{{ asset('js/mobile-enhancements.js') }}"></script>
     
     @yield('head')
 </head>

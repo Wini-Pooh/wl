@@ -1,153 +1,102 @@
-<!-- AJAX Модальное окно для загрузки документов (версия 2.0) -->
-<div class="modal fade" id="uploadDocumentModal" tabindex="-1" aria-labelledby="uploadDocumentModalLabel" aria-hidden="true">
+<!-- Модальное окно для загрузки документов (уникальное для страницы документов) -->
+<div class="modal fade" id="documentPageModal" tabindex="-1" aria-labelledby="documentPageModalLabel" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="uploadDocumentModalLabel">
-                    <i class="bi bi-cloud-upload me-2"></i>Загрузка документов
+                <h5 class="modal-title" id="documentPageModalLabel">
+                    <i class="bi bi-file-earmark-text me-2"></i>Загрузить документы
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="uploadDocumentForm" enctype="multipart/form-data">
                     @csrf
-                    <input type="hidden" name="project_id" id="documentProjectId" value="{{ $project->id ?? '' }}">
+                    <input type="hidden" name="project_id" id="documentProjectId" value="{{ $project->id }}">
                     
-                    <div class="mb-4">
-                        <label for="documentInput" class="form-label">Выберите документы</label>
-                        <input type="file" id="documentInput" name="files[]" class="form-control" multiple>
-                        <div class="form-text">Поддерживаемые форматы: PDF, DOC, DOCX, XLS, XLSX, TXT, RTF</div>
+                    <!-- Зона загрузки файлов -->
+                    <div class="upload-zone" id="documentUploadZone">
+                        <div class="upload-content">
+                            <i class="bi bi-file-earmark-arrow-up display-4 text-muted mb-3"></i>
+                            <h5>Перетащите документы сюда</h5>
+                            <p class="text-muted mb-3">или нажмите для выбора файлов</p>
+                            <input type="file" id="documentFileInput" name="documents[]" multiple 
+                                   accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.rtf,.odt,.ods" class="d-none">
+                            <button type="button" class="btn btn-primary" onclick="document.getElementById('documentFileInput').click()">
+                                <i class="bi bi-plus-lg me-1"></i>Выбрать документы
+                            </button>
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    Поддерживаемые форматы: PDF, DOC, DOCX, XLS, XLSX, TXT, RTF, ODT, ODS
+                                </small>
+                            </div>
+                        </div>
                     </div>
                     
-                    <div id="documentPreviewContainer" class="mb-4" style="display: none;">
-                        <h6 class="mb-3">Выбранные документы: <span id="selectedDocumentsCount">0</span></h6>
-                        <div id="documentPreview" class="d-flex flex-wrap gap-2"></div>
+                    <!-- Список выбранных файлов -->
+                    <div id="documentFileList" class="file-list mt-4" style="display: none;">
+                        <h6>Выбранные документы:</h6>
+                        <div id="documentFileItems"></div>
                     </div>
                     
-                    <div class="row">
+                    <!-- Дополнительные параметры -->
+                    <div class="row mt-4">
                         <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="documentCategory" class="form-label">Категория документа</label>
-                                <select class="form-select" id="documentCategory" name="category">
-                                    <option value="">Выберите категорию</option>
+                            <label for="documentType" class="form-label">Тип документа</label>
+                            <div class="input-group">
+                                <select class="form-select" id="documentTypeSelect" onchange="handleDocumentTypeChange()">
+                                    <option value="">Выберите тип</option>
                                     <option value="contract">Договор</option>
-                                    <option value="specification">Спецификация</option>
                                     <option value="estimate">Смета</option>
-                                    <option value="act">Акт</option>
-                                    <option value="invoice">Счет</option>
+                                    <option value="plan">План/чертеж</option>
+                                    <option value="permit">Разрешение</option>
                                     <option value="technical">Техническая документация</option>
-                                    <option value="legal">Юридический документ</option>
-                                    <option value="permits">Разрешительная документация</option>
-                                    <option value="report">Отчет</option>
+                                    <option value="invoice">Счет</option>
+                                    <option value="act">Акт</option>
+                                    <option value="certificate">Сертификат</option>
+                                    <option value="photo_report">Фотоотчет</option>
+                                    <option value="correspondence">Переписка</option>
                                     <option value="other">Другое</option>
+                                    <option value="custom">Свой тип</option>
                                 </select>
+                                <button class="btn btn-outline-secondary" type="button" onclick="toggleCustomDocumentType()" title="Ввести свой тип документа">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
                             </div>
+                            <input type="text" class="form-control mt-2" id="documentType" name="document_type" 
+                                   placeholder="Введите свой тип документа..." style="display: none;">
                         </div>
                         <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="documentStatus" class="form-label">Статус</label>
-                                <select class="form-select" id="documentStatus" name="status">
-                                    <option value="active">Актуальный</option>
-                                    <option value="draft">Черновик</option>
-                                    <option value="archived">Архивный</option>
-                                    <option value="pending">На согласовании</option>
-                                    <option value="approved">Утвержден</option>
-                                    <option value="rejected">Отклонен</option>
-                                </select>
-                            </div>
+                            <label for="documentImportance" class="form-label">Важность</label>
+                            <select class="form-select" id="documentImportance" name="importance">
+                                <option value="normal">Обычная</option>
+                                <option value="high">Высокая</option>
+                                <option value="urgent">Срочная</option>
+                            </select>
                         </div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label for="documentDescription" class="form-label">Описание (необязательно)</label>
-                        <textarea class="form-control" id="documentDescription" name="description" rows="3" placeholder="Добавьте описание документа"></textarea>
+                    <div class="mt-3">
+                        <label for="documentDescription" class="form-label">Описание</label>
+                        <textarea class="form-control" id="documentDescription" name="description" rows="3" 
+                                  placeholder="Добавьте описание к документам..."></textarea>
+                    </div>
+                    
+                    <!-- Прогресс загрузки -->
+                    <div id="documentUploadProgress" class="mt-4" style="display: none;">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>Загрузка документов...</span>
+                            <span id="documentProgressText">0%</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar" id="documentProgressBar" role="progressbar" style="width: 0%"></div>
+                        </div>
                     </div>
                 </form>
-                
-                <div class="progress mb-3" id="documentUploadProgress" style="display: none;">
-                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
-                </div>
-                
-                <div class="alert alert-danger" id="documentUploadError" style="display: none;"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" id="uploadDocumentsBtn" disabled>
-                    <i class="bi bi-cloud-upload me-2"></i>Загрузить
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Модальное окно просмотра документа -->
-<div class="modal fade" id="viewDocumentModal" tabindex="-1" aria-labelledby="viewDocumentModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="viewDocumentModalLabel">Просмотр документа</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center mb-4" id="documentPreviewContent">
-                    <!-- Содержимое будет добавлено динамически -->
-                </div>
-                
-                <div class="card">
-                    <div class="card-body">
-                        <h5 id="viewDocumentTitle" class="card-title mb-3"></h5>
-                        
-                        <div class="d-flex flex-wrap gap-2 mb-3">
-                            <span class="badge bg-primary" id="viewDocumentCategory"></span>
-                            <span class="badge bg-secondary" id="viewDocumentStatus"></span>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <h6 class="text-muted">Описание:</h6>
-                            <p id="viewDocumentDescription" class="mb-0"></p>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6">
-                                <p class="mb-1"><strong>Размер файла:</strong> <span id="viewDocumentSize"></span></p>
-                                <p class="mb-1"><strong>Тип файла:</strong> <span id="viewDocumentFormat"></span></p>
-                            </div>
-                            <div class="col-md-6">
-                                <p class="mb-1"><strong>Дата загрузки:</strong> <span id="viewDocumentDate"></span></p>
-                                <p class="mb-1"><strong>Загрузил:</strong> <span id="viewDocumentUser"></span></p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <a href="#" class="btn btn-primary" id="downloadDocumentBtn" target="_blank">
-                    <i class="bi bi-download me-2"></i>Скачать
-                </a>
-                <button type="button" class="btn btn-danger" id="deleteDocumentBtn">
-                    <i class="bi bi-trash me-2"></i>Удалить
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Модальное окно подтверждения удаления -->
-<div class="modal fade" id="confirmDeleteDocumentModal" tabindex="-1" aria-labelledby="confirmDeleteDocumentModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="confirmDeleteDocumentModalLabel">Подтверждение удаления</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
-            </div>
-            <div class="modal-body">
-                <p>Вы уверены, что хотите удалить этот документ?</p>
-                <input type="hidden" id="documentToDeleteId">
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-danger" id="confirmDocumentDeleteBtn">
-                    <i class="bi bi-trash me-2"></i>Удалить
+                <button type="button" class="btn btn-primary" id="uploadDocumentBtn" disabled>
+                    <i class="bi bi-upload me-1"></i>Загрузить документы
                 </button>
             </div>
         </div>
@@ -155,419 +104,492 @@
 </div>
 
 <script>
-$(document).ready(function() {
-    console.log('Инициализация модальных окон для документов');
-    
-    // Функция создания превью для документов
-    function showDocumentPreview(files) {
-        console.log('Вызов showDocumentPreview с', files.length, 'файлами');
-        const container = $('#documentPreview');
-        
-        // Очищаем контейнер
-        container.html('');
-        
-        if (!files || files.length === 0) return;
-        
-        // Для отслеживания уже обработанных файлов
-        const alreadyProcessed = new Set();
-        
-        // Создаем превью для файлов
-        Array.from(files).forEach((file, index) => {
-            // Создаем уникальный идентификатор файла
-            const fileId = file.name + '_' + file.size + '_' + index;
-            
-            // Пропускаем, если файл уже обработан
-            if (alreadyProcessed.has(fileId)) {
-                console.log('Файл уже обработан, пропускаем:', file.name);
-                return;
-            }
-            
-            alreadyProcessed.add(fileId);
-            
-            // Определяем иконку в зависимости от типа файла
-            const extension = file.name.split('.').pop().toLowerCase();
-            let icon = 'bi-file';
-            
-            switch (extension) {
-                case 'pdf':
-                    icon = 'bi-file-pdf';
-                    break;
-                case 'doc':
-                case 'docx':
-                    icon = 'bi-file-word';
-                    break;
-                case 'xls':
-                case 'xlsx':
-                    icon = 'bi-file-excel';
-                    break;
-                case 'txt':
-                    icon = 'bi-file-text';
-                    break;
-            }
-            
-            // Добавляем элемент с иконкой в превью
-            container.append(`
-                <div class="position-relative d-inline-block me-2 mb-2" data-file-index="${index}" data-file-id="${fileId}">
-                    <div class="document-preview text-center p-2 border rounded">
-                        <i class="${icon} fs-1"></i>
-                        <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 rounded-circle p-1" style="width: 20px; height: 20px; font-size: 10px;" onclick="removeDocumentPreview(this, ${index})">
-                            <i class="bi bi-x"></i>
-                        </button>
-                        <small class="d-block text-muted mt-1" style="font-size: 10px; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${file.name}">
-                            ${file.name}
-                        </small>
-                    </div>
-                </div>
-            `);
-        });
-        
-        // Обновляем счетчик
-        $('#selectedDocumentsCount').text(alreadyProcessed.size);
-    }
+// Предотвращаем множественную инициализацию
+if (!window.documentModalInitialized) {
+    window.documentModalInitialized = true;
 
-    // Обработчик выбора файлов
-    $('#documentInput').off('change').one('change', function(e) {
-        const files = this.files;
-        console.log('Файлы выбраны:', files.length);
+    // Оптимизированная инициализация через ProjectManager
+    $(document).ready(function() {
+        console.log('📄 Инициализация модального окна документов...');
         
-        if (files && files.length > 0) {
-            $('#uploadDocumentsBtn').prop('disabled', false);
-            $('#documentPreviewContainer').show();
-            showDocumentPreview(files);
+        // Проверяем и устанавливаем project ID
+        const projectId = window.projectId || 
+                         $('meta[name="project-id"]').attr('content') || 
+                         $('#projectId').val() ||
+                         $('[data-project-id]').data('project-id') ||
+                         {{ $project->id ?? 'null' }};
+        
+        if (projectId && projectId !== 'null') {
+            $('#documentProjectId').val(projectId);
+            console.log('📄 Project ID установлен:', projectId);
         } else {
-            $('#uploadDocumentsBtn').prop('disabled', true);
-            $('#documentPreviewContainer').hide();
-            $('#selectedDocumentsCount').text(0);
+            console.error('❌ Project ID не найден для модального окна документов');
         }
         
-        // Переинициализируем обработчик для следующего выбора файлов
-        $(this).off('change').one('change', arguments.callee);
+        if (window.projectManager) {
+            // Используем унифицированную систему инициализации модалов
+            window.projectManager.initModal('documentPageModal', 'document', function() {
+                console.log('✅ Модал документов инициализирован через ProjectManager');
+                initDocumentModalHandlers();
+            });
+        } else {
+            console.warn('⚠️ ProjectManager не найден, используем fallback инициализацию');
+            initDocumentModalHandlers();
+        }
     });
+}
+
+function initDocumentModalHandlers() {
+    console.log('📄 Инициализация обработчиков документов...');
     
+    // Проверяем, не были ли уже инициализированы обработчики
+    if (window.documentUploadHandlersInitialized) {
+        console.log('ℹ️ Обработчики документов уже инициализированы, пропускаем');
+        return;
+    }
+    
+    initDocumentUploadHandlers();
+    
+    // Отмечаем, что обработчики инициализированы
+    window.documentUploadHandlersInitialized = true;
+    console.log('✅ Обработчики модала документов инициализированы');
+}
+
+function initDocumentUploadHandlers() {
+    console.log('📄 Инициализация обработчиков загрузки документов...');
+    
+    const uploadZone = document.getElementById('documentUploadZone');
+    const fileInput = document.getElementById('documentFileInput');
+    const fileList = document.getElementById('documentFileList');
+    const fileItems = document.getElementById('documentFileItems');
+    const uploadBtn = document.getElementById('uploadDocumentBtn');
+    
+    if (!uploadZone || !fileInput || !fileList || !fileItems || !uploadBtn) {
+        console.error('❌ Не найдены необходимые элементы для инициализации загрузки документов');
+        return;
+    }
+    
+    let selectedFiles = [];
+
+    // ПОЛНАЯ ОЧИСТКА старых обработчиков с заменой элементов
+    console.log('🧹 Полная очистка обработчиков файлов документов...');
+    
+    // Клонируем элементы для полной очистки обработчиков
+    const cleanUploadZone = uploadZone.cloneNode(true);
+    const cleanFileInput = fileInput.cloneNode(true);
+    const cleanUploadBtn = uploadBtn.cloneNode(true);
+    
+    uploadZone.parentNode.replaceChild(cleanUploadZone, uploadZone);
+    fileInput.parentNode.replaceChild(cleanFileInput, fileInput);
+    uploadBtn.parentNode.replaceChild(cleanUploadBtn, uploadBtn);
+
+    // Получаем ссылки на новые элементы
+    const newUploadZone = document.getElementById('documentUploadZone');
+    const newFileInput = document.getElementById('documentFileInput');
+    const newUploadBtn = document.getElementById('uploadDocumentBtn');
+
+    console.log('✅ Элементы документов очищены и заменены');
+
+    // Drag & Drop обработчики
+    newUploadZone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        newUploadZone.classList.add('dragover');
+    });
+
+    newUploadZone.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        newUploadZone.classList.remove('dragover');
+    });
+
+    newUploadZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        newUploadZone.classList.remove('dragover');
+        
+        const files = Array.from(e.dataTransfer.files).filter(file => isValidDocumentFile(file));
+        console.log('📂 Document files dropped:', files.length);
+        handleFileSelection(files);
+    });
+
+    // Обработчик выбора файлов через input
+    newFileInput.addEventListener('change', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const files = Array.from(e.target.files);
+        console.log('📂 Document files selected via input:', files.length);
+        handleFileSelection(files);
+    });
+
+    // Обработчик клика по зоне загрузки
+    newUploadZone.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('📂 Document upload zone clicked');
+        newFileInput.click();
+    });
+
+    // Обработчик кнопки "Выбрать документы"
+    const selectBtn = newUploadZone.querySelector('button');
+    if (selectBtn) {
+        selectBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('📂 Document select button clicked');
+            newFileInput.click();
+        });
+    }
+
+    function isValidDocumentFile(file) {
+        const allowedTypes = [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'text/plain',
+            'application/rtf',
+            'application/vnd.oasis.opendocument.text',
+            'application/vnd.oasis.opendocument.spreadsheet'
+        ];
+        return allowedTypes.includes(file.type);
+    }
+
+    function handleFileSelection(files) {
+        console.log('📄 Обработка выбранных документов:', files.length);
+        
+        if (files.length === 0) {
+            console.log('ℹ️ Документы не выбраны');
+            return;
+        }
+        
+        selectedFiles = files;
+        displaySelectedFiles();
+        newUploadBtn.disabled = false;
+        
+        console.log('✅ Документы обработаны:', selectedFiles.length);
+    }
+
+    function displaySelectedFiles() {
+        console.log('📋 Отображение выбранных документов...');
+        
+        fileItems.innerHTML = '';
+        
+        if (selectedFiles.length === 0) {
+            fileList.style.display = 'none';
+            return;
+        }
+        
+        fileList.style.display = 'block';
+        
+        selectedFiles.forEach((file, index) => {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item d-flex justify-content-between align-items-center p-2 border rounded mb-2';
+            
+            fileItem.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-file-earmark me-2"></i>
+                    <div>
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-size text-muted">${formatFileSize(file.size)}</div>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeDocumentFile(${index})">
+                    <i class="bi bi-trash"></i>
+                </button>
+            `;
+            
+            fileItems.appendChild(fileItem);
+        });
+    }
+
+    // Глобальная функция для удаления документа
+    window.removeDocumentFile = function(index) {
+        selectedFiles.splice(index, 1);
+        displaySelectedFiles();
+        newUploadBtn.disabled = selectedFiles.length === 0;
+    };
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
     // Обработчик загрузки документов
-    $('#uploadDocumentsBtn').click(function() {
+    newUploadBtn.addEventListener('click', function() {
+        if (selectedFiles.length === 0) {
+            console.log('❌ Нет документов для загрузки');
+            return;
+        }
+        
+        console.log('🚀 Начинаем загрузку документов:', selectedFiles.length);
         uploadDocuments();
     });
-    
-    // Обработчик удаления документа
-    $('#deleteDocumentBtn').click(function() {
-        const documentId = $(this).data('document-id');
-        $('#documentToDeleteId').val(documentId);
-        $('#viewDocumentModal').modal('hide');
-        $('#confirmDeleteDocumentModal').modal('show');
-    });
-    
-    // Подтверждение удаления
-    $('#confirmDocumentDeleteBtn').click(function() {
-        const documentId = $('#documentToDeleteId').val();
-        if (documentId) {
-            deleteDocument(documentId);
-        }
-    });
-    
-    // Сброс при закрытии модального окна
-    $('#uploadDocumentModal').on('hidden.bs.modal', function() {
-        const form = document.getElementById('uploadDocumentForm');
-        if (form) form.reset();
+
+    function uploadDocuments() {
+        const projectId = $('#documentProjectId').val();
         
-        $('#documentPreview').empty();
-        $('#documentPreviewContainer').hide();
-        $('#selectedDocumentsCount').text(0);
-        $('#uploadDocumentsBtn').prop('disabled', true);
-        $('#documentUploadProgress').hide();
-        $('#documentUploadError').hide();
-    });
-});
-
-// Функция загрузки документов через AJAX
-function uploadDocuments() {
-    const form = $('#uploadDocumentForm')[0];
-    const formData = new FormData(form);
-    const projectId = $('#documentProjectId').val();
-    
-    // Добавляем CSRF токен
-    formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
-    
-    $('#uploadDocumentsBtn').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Загрузка...');
-    $('#documentUploadProgress').show();
-    $('#documentUploadError').hide();
-    
-    $.ajax({
-        url: `/api/projects/${projectId}/documents`,
-        type: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
-        xhr: function() {
-            const xhr = new window.XMLHttpRequest();
-            xhr.upload.addEventListener('progress', function(e) {
-                if (e.lengthComputable) {
-                    const percent = Math.round((e.loaded / e.total) * 100);
-                    $('#documentUploadProgress .progress-bar')
-                        .css('width', percent + '%')
-                        .attr('aria-valuenow', percent)
-                        .text(percent + '%');
-                }
-            });
-            return xhr;
-        },
-        success: function(response) {
-            console.log('Документы успешно загружены', response);
-            $('#uploadDocumentModal').modal('hide');
-            
-            // Обновляем список документов
-            if (window.DocumentManagerFixed && typeof window.DocumentManagerFixed.loadFiles === 'function') {
-                window.DocumentManagerFixed.loadFiles();
-            }
-            
-            // Показываем сообщение
-            showMessage('Документы успешно загружены', 'success');
-        },
-        error: function(xhr, status, error) {
-            console.error('Ошибка при загрузке документов:', error);
-            $('#uploadDocumentsBtn').prop('disabled', false).html('<i class="bi bi-cloud-upload me-2"></i>Загрузить');
-            
-            let errorMessage = 'Произошла ошибка при загрузке документов';
-            if (xhr.responseJSON && xhr.responseJSON.message) {
-                errorMessage = xhr.responseJSON.message;
-            }
-            
-            $('#documentUploadError').text(errorMessage).show();
-        },
-        complete: function() {
-            $('#uploadDocumentsBtn').prop('disabled', false).html('<i class="bi bi-cloud-upload me-2"></i>Загрузить');
+        if (!projectId) {
+            console.error('❌ Project ID не найден для документов');
+            alert('Ошибка: ID проекта не найден');
+            return;
         }
-    });
-}
-
-// Функция удаления документа через AJAX
-function deleteDocument(documentId) {
-    const projectId = $('#documentProjectId').val();
-    
-    $('#confirmDocumentDeleteBtn').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Удаление...');
-    
-    $.ajax({
-        url: `/api/projects/${projectId}/documents/${documentId}`,
-        type: 'DELETE',
-        data: {
-            _token: $('meta[name="csrf-token"]').attr('content')
-        },
-        success: function(response) {
-            console.log('Документ успешно удален', response);
-            $('#confirmDeleteDocumentModal').modal('hide');
-            
-            // Обновляем список документов
-            if (window.DocumentManagerFixed && typeof window.DocumentManagerFixed.loadFiles === 'function') {
-                window.DocumentManagerFixed.loadFiles();
-            }
-            
-            // Показываем сообщение
-            showMessage('Документ успешно удален', 'success');
-        },
-        error: function(xhr, status, error) {
-            console.error('Ошибка при удалении документа:', error);
-            
-            let errorMessage = 'Произошла ошибка при удалении документа';
-            if (xhr.responseJSON && xhr.responseJSON.message) {
-                errorMessage = xhr.responseJSON.message;
-            }
-            
-            showMessage(errorMessage, 'error');
-        },
-        complete: function() {
-            $('#confirmDocumentDeleteBtn').prop('disabled', false).html('<i class="bi bi-trash me-2"></i>Удалить');
-        }
-    });
-}
-
-// Открытие модального окна просмотра документа
-function viewDocument(documentId) {
-    const projectId = $('#documentProjectId').val();
-    
-    $.ajax({
-        url: `/api/projects/${projectId}/documents/${documentId}`,
-        type: 'GET',
-        success: function(response) {
-            const document = response.data;
-            
-            // Заполняем данные в модальном окне
-            $('#viewDocumentTitle').text(document.name || 'Документ без названия');
-            $('#viewDocumentCategory').text(getDocumentCategoryName(document.category));
-            $('#viewDocumentStatus').text(getDocumentStatusName(document.status));
-            $('#viewDocumentDescription').text(document.description || 'Описание отсутствует');
-            $('#viewDocumentSize').text(formatFileSize(document.size));
-            $('#viewDocumentFormat').text(document.extension.toUpperCase());
-            $('#viewDocumentDate').text(formatDate(document.created_at));
-            $('#viewDocumentUser').text(document.user ? document.user.name : 'Система');
-            $('#downloadDocumentBtn').attr('href', document.download_url);
-            $('#deleteDocumentBtn').data('document-id', document.id);
-            
-            // Подготавливаем предпросмотр в зависимости от типа файла
-            const previewContainer = $('#documentPreviewContent');
-            previewContainer.empty();
-            
-            const isPdf = document.extension.toLowerCase() === 'pdf';
-            
-            if (isPdf) {
-                previewContainer.html(`<iframe src="${document.url}" width="100%" height="400" class="border rounded"></iframe>`);
-            } else {
-                // Для других типов файлов показываем иконку
-                const iconClass = getDocumentIconClass(document.extension);
-                previewContainer.html(`
-                    <div class="file-icon-large">
-                        <i class="${iconClass} fa-5x text-primary"></i>
-                        <p class="mt-3">${document.extension.toUpperCase()} файл</p>
-                        <p class="text-muted">Предпросмотр недоступен</p>
-                    </div>
-                `);
-            }
-            
-            $('#viewDocumentModal').modal('show');
-        },
-        error: function(xhr, status, error) {
-            console.error('Ошибка при получении данных документа:', error);
-            showMessage('Не удалось загрузить данные документа', 'error');
-        }
-    });
-}
-
-// Вспомогательные функции
-function showDocumentPreview(files) {
-    const container = $('#documentPreview');
-    container.empty();
-    
-    if (!files || files.length === 0) return;
-    
-    Array.from(files).forEach((file, index) => {
-        const extension = file.name.split('.').pop().toLowerCase();
-        const iconClass = getDocumentIconClass(extension);
         
-        const preview = $(`
-            <div class="position-relative d-inline-block me-2 mb-2">
-                <div class="file-icon-wrapper img-thumbnail d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
-                    <i class="${iconClass} fa-2x"></i>
-                    <span class="file-extension">${extension.toUpperCase()}</span>
+        console.log('📤 Загружаем документы для проекта:', projectId);
+        
+        const formData = new FormData();
+        formData.append('project_id', projectId);
+        formData.append('document_type', $('#documentType').val() || $('#documentTypeSelect').val());
+        formData.append('importance', $('#documentImportance').val());
+        formData.append('description', $('#documentDescription').val());
+        
+        selectedFiles.forEach(file => {
+            formData.append('documents[]', file);
+        });
+        
+        // Показываем прогресс (имитация)
+        const progressContainer = document.getElementById('documentUploadProgress');
+        const progressBar = document.getElementById('documentProgressBar');
+        const progressText = document.getElementById('documentProgressText');
+        
+        progressContainer.style.display = 'block';
+        newUploadBtn.disabled = true;
+        
+        // Простое уведомление вместо AJAX запроса
+        setTimeout(() => {
+            console.log('✅ Загрузка документов временно отключена');
+            
+            // Закрываем модальное окно
+            const modal = bootstrap.Modal.getInstance(document.getElementById('documentPageModal'));
+            if (modal) {
+                modal.hide();
+            }
+            
+            // Показываем уведомление
+            alert('Функция загрузки документов временно отключена');
+            
+            // Перезагружаем список документов
+            if (window.loadDocuments) {
+                window.loadDocuments();
+            } else if (window.location.pathname.includes('/documents')) {
+                // window.location.reload(); // Отключаем перезагрузку страницы
+            }
+            
+            // Очищаем форму
+            selectedFiles = [];
+            displaySelectedFiles();
+            document.getElementById('uploadDocumentForm').reset();
+            
+            // Скрываем прогресс
+            progressContainer.style.display = 'none';
+            newUploadBtn.disabled = false;
+            progressBar.style.width = '0%';
+            progressText.textContent = '0%';
+        }, 1000);
+    }
+    
+    console.log('✅ Обработчики загрузки документов инициализированы');
+}
+        displaySelectedFiles();
+        uploadBtn.disabled = files.length === 0;
+    }
+
+    function displaySelectedFiles() {
+        if (selectedFiles.length === 0) {
+            fileList.style.display = 'none';
+            return;
+        }
+
+        fileList.style.display = 'block';
+        fileItems.innerHTML = '';
+
+        selectedFiles.forEach((file, index) => {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            fileItem.innerHTML = `
+                <div class="file-icon">
+                    <i class="bi bi-${getDocumentIcon(file.type)} text-primary"></i>
                 </div>
-                <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 rounded-circle p-1" style="width: 20px; height: 20px; font-size: 10px;" onclick="removeDocumentPreview(this, ${index})">
-                    <i class="bi bi-x"></i>
-                </button>
-                <small class="d-block text-muted text-center mt-1" style="font-size: 10px; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${file.name}">
-                    ${file.name}
-                </small>
-            </div>
-        `);
-        container.append(preview);
-    });
-}
+                <div class="file-info">
+                    <div class="file-name">${file.name}</div>
+                    <div class="file-size">${formatFileSize(file.size)}</div>
+                </div>
+                <div class="file-actions">
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeDocumentFile(${index})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            `;
+            fileItems.appendChild(fileItem);
+        });
+    }
 
-function removeDocumentPreview(button, index) {
-    const documentInput = document.getElementById('documentInput');
-    if (documentInput && documentInput.files) {
+    function getDocumentIcon(fileType) {
+        switch (fileType) {
+            case 'application/pdf':
+                return 'file-earmark-pdf';
+            case 'application/msword':
+            case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+                return 'file-earmark-word';
+            case 'application/vnd.ms-excel':
+            case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+                return 'file-earmark-excel';
+            case 'text/plain':
+                return 'file-earmark-text';
+            default:
+                return 'file-earmark';
+        }
+    }
+
+    window.removeDocumentFile = function(index) {
+        selectedFiles.splice(index, 1);
+        displaySelectedFiles();
+        uploadBtn.disabled = selectedFiles.length === 0;
+        
+        // Обновляем input
         const dt = new DataTransfer();
-        Array.from(documentInput.files).forEach((file, i) => {
-            if (i !== index) {
-                dt.items.add(file);
+        selectedFiles.forEach(file => dt.items.add(file));
+        fileInput.files = dt.files;
+    };
+
+    // Обработчик загрузки
+    uploadBtn.addEventListener('click', function() {
+        if (selectedFiles.length === 0) {
+            return;
+        }
+
+        uploadDocuments();
+    });
+
+    function uploadDocuments() {
+        console.log('📤 Начинаем загрузку документов...');
+        
+        const formData = new FormData();
+        const projectId = $('#documentProjectId').val();
+        
+        if (!projectId) {
+            console.error('❌ Project ID не найден');
+            if (window.modalManager) {
+                window.modalManager.showErrorToast('Ошибка: ID проекта не найден');
+            }
+            return;
+        }
+        
+        // Добавляем все данные в FormData
+        formData.append('project_id', projectId);
+        
+        // Получаем тип документа (кастомный или из select)
+        const documentTypeInput = $('#documentType');
+        const documentTypeSelect = $('#documentTypeSelect');
+        let documentType = '';
+        
+        if (documentTypeSelect.val() === 'custom' && documentTypeInput.val()) {
+            documentType = documentTypeInput.val();
+        } else if (documentTypeSelect.val() && documentTypeSelect.val() !== 'custom') {
+            documentType = documentTypeSelect.val();
+        }
+        
+        formData.append('document_type', documentType);
+        formData.append('importance', $('#documentImportance').val());
+        formData.append('description', $('#documentDescription').val());
+        formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
+        
+        // Добавляем файлы
+        selectedFiles.forEach((file, index) => {
+            formData.append('documents[]', file);
+        });
+
+        // Показываем прогресс (имитация)
+        showDocumentUploadProgress();
+        
+        // Отключаем кнопку загрузки
+        uploadBtn.disabled = true;
+        uploadBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Загрузка...';
+
+        // Простое уведомление вместо AJAX запроса
+        setTimeout(() => {
+            console.log('✅ Загрузка документов временно отключена');
+            
+            hideDocumentUploadProgress();
+            uploadBtn.disabled = false;
+            uploadBtn.innerHTML = '<i class="bi bi-upload me-1"></i>Загрузить документы';
+            
+            if (window.modalManager) {
+                window.modalManager.closeActiveModal();
+                window.modalManager.showToast('Функция загрузки документов временно отключена', 'info');
+            } else {
+                alert('Функция загрузки документов временно отключена');
+            }
+            
+            // Перезагружаем документы на странице
+            if (typeof window.reloadDocuments === 'function') {
+                window.reloadDocuments();
+            }
+        }, 1500);
+                    errorMessage = xhr.responseJSON.message;
+                }
+                
+                if (window.modalManager) {
+                    window.modalManager.showErrorToast(errorMessage);
+                }
             }
         });
-        documentInput.files = dt.files;
-        $(documentInput).trigger('change');
+    }
+
+    function showDocumentUploadProgress() {
+        document.getElementById('documentUploadProgress').style.display = 'block';
+    }
+
+    function hideDocumentUploadProgress() {
+        document.getElementById('documentUploadProgress').style.display = 'none';
+    }
+
+    function updateDocumentUploadProgress(percent) {
+        const progressBar = document.getElementById('documentProgressBar');
+        const progressText = document.getElementById('documentProgressText');
+        
+        progressBar.style.width = percent + '%';
+        progressText.textContent = Math.round(percent) + '%';
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 }
 
-function getDocumentIconClass(extension) {
-    const iconMap = {
-        'pdf': 'bi bi-file-earmark-pdf',
-        'doc': 'bi bi-file-earmark-word',
-        'docx': 'bi bi-file-earmark-word',
-        'xls': 'bi bi-file-earmark-excel',
-        'xlsx': 'bi bi-file-earmark-excel',
-        'ppt': 'bi bi-file-earmark-ppt',
-        'pptx': 'bi bi-file-earmark-ppt',
-        'txt': 'bi bi-file-earmark-text',
-        'rtf': 'bi bi-file-earmark-richtext',
-        'zip': 'bi bi-file-earmark-zip',
-        'rar': 'bi bi-file-earmark-zip'
-    };
+// Функции для управления кастомными полями типа документа
+function handleDocumentTypeChange() {
+    const select = document.getElementById('documentTypeSelect');
+    const input = document.getElementById('documentType');
     
-    return iconMap[extension] || 'bi bi-file-earmark';
-}
-
-function getDocumentCategoryName(category) {
-    const categories = {
-        'contract': 'Договор',
-        'specification': 'Спецификация',
-        'estimate': 'Смета',
-        'act': 'Акт',
-        'invoice': 'Счет',
-        'technical': 'Техническая документация',
-        'legal': 'Юридический документ',
-        'permits': 'Разрешительная документация',
-        'report': 'Отчет',
-        'other': 'Другое'
-    };
-    
-    return categories[category] || 'Не указано';
-}
-
-function getDocumentStatusName(status) {
-    const statuses = {
-        'active': 'Актуальный',
-        'draft': 'Черновик',
-        'archived': 'Архивный',
-        'pending': 'На согласовании',
-        'approved': 'Утвержден',
-        'rejected': 'Отклонен'
-    };
-    
-    return statuses[status] || 'Не указано';
-}
-
-function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
-
-function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Байт';
-    const k = 1024;
-    const sizes = ['Байт', 'КБ', 'МБ', 'ГБ'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
-
-// Функция для отображения сообщений
-function showMessage(message, type = 'info') {
-    let bgClass = 'bg-info';
-    let icon = 'bi-info-circle';
-    
-    if (type === 'success') {
-        bgClass = 'bg-success';
-        icon = 'bi-check-circle';
-    } else if (type === 'error') {
-        bgClass = 'bg-danger';
-        icon = 'bi-exclamation-circle';
-    } else if (type === 'warning') {
-        bgClass = 'bg-warning';
-        icon = 'bi-exclamation-triangle';
+    if (select.value === 'custom') {
+        toggleCustomDocumentType();
+    } else {
+        input.style.display = 'none';
+        input.value = '';
     }
+}
+
+function toggleCustomDocumentType() {
+    const select = document.getElementById('documentTypeSelect');
+    const input = document.getElementById('documentType');
     
-    const toast = $(`
-        <div class="toast align-items-center ${bgClass} text-white" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="d-flex">
-                <div class="toast-body">
-                    <i class="bi ${icon} me-2"></i>${message}
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Закрыть"></button>
-            </div>
-        </div>
-    `);
-    
-    $('.toast-container').append(toast);
-    const bsToast = new bootstrap.Toast(toast[0]);
-    bsToast.show();
-    
-    setTimeout(() => {
-        toast.remove();
-    }, 5000);
+    if (input.style.display === 'none' || input.style.display === '') {
+        input.style.display = 'block';
+        input.focus();
+        select.value = 'custom';
+    } else {
+        input.style.display = 'none';
+        input.value = '';
+        select.value = '';
+    }
 }
 </script>

@@ -154,6 +154,18 @@ class ProjectFinanceController extends Controller
     {
         $this->checkProjectAccess($project);
 
+        // Нормализуем числовые поля - заменяем запятые на точки
+        $normalizedData = $request->all();
+        $numericFields = ['quantity', 'price', 'paid_amount'];
+        
+        foreach ($numericFields as $field) {
+            if (isset($normalizedData[$field]) && is_string($normalizedData[$field])) {
+                $normalizedData[$field] = str_replace(',', '.', $normalizedData[$field]);
+            }
+        }
+        
+        $request->merge($normalizedData);
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'type' => 'nullable|in:basic,additional',
@@ -469,5 +481,80 @@ class ProjectFinanceController extends Controller
             'success' => true,
             'message' => 'Транспорт успешно удален'
         ]);
+    }
+
+    // ===== ЧАСТИЧНЫЕ ДАННЫЕ ДЛЯ AJAX =====
+
+    /**
+     * Получить частичные данные о работах для AJAX-запросов
+     */ 
+    public function getWorksPartial(Project $project)
+    {
+        try {
+            $this->checkProjectAccess($project);
+            
+            $works = $project->works()->orderBy('created_at', 'desc')->get();
+            
+            $html = view('partner.projects.finance.partials.works-partial', compact('works'))->render();
+            
+            return response()->json([
+                'success' => true,
+                'html' => $html,
+                'count' => $works->count()
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    /**
+     * Получить частичные данные о материалах для AJAX-запросов
+     */
+    public function getMaterialsPartial(Project $project)
+    {
+        try {
+            $this->checkProjectAccess($project);
+            $materials = $project->materials()->orderBy('created_at', 'desc')->get();
+            
+            $html = view('partner.projects.finance.partials.materials-partial', compact('materials'))->render();
+            
+            return response()->json([
+                'success' => true,
+                'html' => $html,
+                'count' => $materials->count()
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    /**
+     * Получить частичные данные о транспорте для AJAX-запросов
+     */
+    public function getTransportsPartial(Project $project)
+    {
+        try {
+            $this->checkProjectAccess($project);
+            $transports = $project->transports()->orderBy('created_at', 'desc')->get();
+            
+            $html = view('partner.projects.finance.partials.transports-partial', compact('transports'))->render();
+            
+            return response()->json([
+                'success' => true,
+                'html' => $html,
+                'count' => $transports->count()
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 }

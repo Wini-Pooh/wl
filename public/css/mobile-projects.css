@@ -1,0 +1,249 @@
+/* 
+=== МОБИЛЬНАЯ АДАПТАЦИЯ ДЛЯ ПРОЕКТОВ ===
+Современный адаптивный дизайн для списка проектов
+*/
+
+/* ===== ОСНОВНЫЕ ПЕРЕМЕННЫЕ ===== */
+:root {
+    --project-primary: #3b82f6;
+    --project-primary-dark: #1e40af;
+    --project-success: #10b981;
+    --project-warning: #f59e0b;
+    --project-danger: #ef4444;
+    --project-glass: rgba(255, 255, 255, 0.95);
+    --project-border: rgba(59, 130, 246, 0.2);
+    --project-shadow: 0 4px 20px rgba(59, 130, 246, 0.15);
+    --project-radius: 16px;
+}
+
+/* ===== АДАПТИВНЫЕ УТИЛИТЫ ===== */
+.visible-mobile {
+    display: block !important;
+}
+
+.visible-desktop {
+    display: none !important;
+}
+
+@media (min-width: 768px) {
+    .visible-mobile {
+        display: none !important;
+    }
+    
+    .visible-desktop {
+        display: block !important;
+    }
+}
+
+/* ===== МОБИЛЬНЫЕ КАРТОЧКИ ПРОЕКТОВ ===== */
+.mobile-project-card {
+    border: 1px solid var(--project-border);
+    border-radius: var(--project-radius);
+    background: var(--project-glass);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.mobile-project-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--project-shadow);
+    border-color: var(--project-primary);
+}
+
+.mobile-project-card .card-body {
+    padding: 1rem;
+}
+
+.mobile-project-card .card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--project-primary);
+}
+
+/* ===== АДАПТИВНЫЕ РАЗМЕРЫ ТЕКСТА ===== */
+.fs-mobile-xs {
+    font-size: 0.75rem !important;
+}
+
+.fs-mobile-sm {
+    font-size: 0.875rem !important;
+}
+
+.fs-mobile-md {
+    font-size: 1rem !important;
+}
+
+/* ===== КНОПКИ ===== */
+.btn-create-mobile {
+    background: linear-gradient(135deg, var(--project-primary) 0%, var(--project-primary-dark) 100%);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-weight: 600;
+    padding: 14px 20px;
+    transition: all 0.3s ease;
+    touch-action: manipulation;
+    min-height: 48px;
+}
+
+.btn-create-mobile:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+    color: white;
+}
+
+/* ===== TOUCH TARGETS ===== */
+.touch-target {
+    min-height: 48px;
+    min-width: 48px;
+    touch-action: manipulation;
+}
+
+/* ===== ГРАДИЕНТНЫЙ ТЕКСТ ===== */
+.gradient-text {
+    background: linear-gradient(135deg, var(--project-primary) 0%, var(--project-primary-dark) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 700;
+}
+
+/* ===== АНИМАЦИИ ===== */
+.fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ===== SHADOW EFFECTS ===== */
+.shadow-blue-hover {
+    transition: box-shadow 0.3s ease;
+}
+
+.shadow-blue-hover:hover {
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+}
+
+.shadow-blue {
+    box-shadow: var(--project-shadow);
+}
+
+/* ===== АДАПТИВНЫЕ ОТСТУПЫ ===== */
+.p-responsive {
+    padding: 1rem;
+}
+
+@media (min-width: 576px) {
+    .p-responsive {
+        padding: 1.5rem;
+    }
+}
+
+@media (min-width: 768px) {
+    .p-responsive {
+        padding: 2rem;
+    }
+}
+
+/* ===== RESPONSIVE BREAKPOINTS ===== */
+@media (max-width: 576px) {
+    .mobile-project-card {
+        margin-bottom: 1rem;
+    }
+    
+    .mobile-project-card .card-body {
+        padding: 0.75rem;
+    }
+    
+    .btn-create-mobile {
+        width: 100%;
+        padding: 16px 20px;
+    }
+}
+
+/* ===== TAB CONTENT MOBILE ===== */
+.tab-content-mobile {
+    padding: 0;
+}
+
+@media (max-width: 768px) {
+    .tab-content-mobile {
+        padding: 0.5rem;
+    }
+}
+
+/* ===== NAV TABS MOBILE ===== */
+.nav-tabs-mobile {
+    border-bottom: 1px solid var(--project-border);
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.nav-tabs-mobile::-webkit-scrollbar {
+    display: none;
+}
+
+.nav-tabs-mobile .nav-item {
+    flex-shrink: 0;
+}
+
+.nav-tabs-mobile .nav-link {
+    white-space: nowrap;
+    padding: 0.75rem 1rem;
+    border: none;
+    border-bottom: 3px solid transparent;
+    background: transparent;
+    color: #6c757d;
+    font-weight: 500;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
+    min-width: auto;
+}
+
+.nav-tabs-mobile .nav-link.active {
+    color: var(--project-primary);
+    border-bottom-color: var(--project-primary);
+    background: transparent;
+    font-weight: 600;
+}
+
+.nav-tabs-mobile .nav-link:hover {
+    color: var(--project-primary);
+    border-color: transparent;
+}
+
+/* ===== LOADING STATES ===== */
+.tab-loading-spinner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+}
+
+.tab-content-wrapper {
+    min-height: 300px;
+}
+
+/* ===== RESPONSIVE UTILITIES ===== */
+@media (max-width: 768px) {
+    .h-md-3 {
+        font-size: 1.5rem !important;
+    }
+    
+    .h4 {
+        font-size: 1.25rem !important;
+    }
+}

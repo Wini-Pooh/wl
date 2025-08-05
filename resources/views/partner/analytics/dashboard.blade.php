@@ -2,50 +2,56 @@
 
 @section('content')
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<div class="container-fluid">
-    <!-- Заголовок -->
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
-        <h2 class="mb-2 mb-md-0">
-            <i class="bi bi-graph-up me-2"></i>
-            <span class="d-none d-sm-inline">Аналитика и отчеты</span>
-            <span class="d-sm-none">Аналитика</span>
-        </h2>
-        <div class="btn-group">
-            <select id="periodSelect" class="form-select" style="width: 200px;">
-                <option value="7" {{ $period == 7 ? 'selected' : '' }}>За 7 дней</option>
-                <option value="30" {{ $period == 30 ? 'selected' : '' }}>За 30 дней</option>
-                <option value="90" {{ $period == 90 ? 'selected' : '' }}>За 90 дней</option>
-                <option value="365" {{ $period == 365 ? 'selected' : '' }}>За год</option>
+<div class="container-fluid fade-in px-2 px-md-3">
+    <!-- Заголовок с мобильной адаптацией -->
+    <div class="row align-items-center mb-3 mb-md-4">
+        <div class="col-12 col-md-8 mb-2 mb-md-0">
+            <h2 class="mb-0 gradient-text fs-4 fs-md-2">
+                <i class="bi bi-graph-up me-2"></i>
+                <span class="d-none d-sm-inline">Аналитика и отчеты</span>
+                <span class="d-sm-none">Аналитика</span>
+            </h2>
+        </div>
+        <div class="col-12 col-md-4">
+            <select id="periodSelect" class="form-select form-select-sm form-select-md-regular w-100">
+                <option value="7" {{ $period == 7 ? 'selected' : '' }}>7 дней</option>
+                <option value="30" {{ $period == 30 ? 'selected' : '' }}>30 дней</option>
+                <option value="90" {{ $period == 90 ? 'selected' : '' }}>90 дней</option>
+                <option value="365" {{ $period == 365 ? 'selected' : '' }}>Год</option>
             </select>
         </div>
     </div>
 
-    <!-- Навигация по вкладкам -->
-    <div class="card mb-4">
-        <div class="card-header p-0">
-            <ul class="nav nav-tabs card-header-tabs" id="analyticsTab" role="tablist">
+    <!-- Навигация по вкладкам с мобильной адаптацией -->
+    <div class="card mb-3 mb-md-4 shadow-sm">
+        <div class="card-header p-1 p-md-2">
+            <ul class="nav nav-tabs card-header-tabs nav-justified" id="analyticsTab" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="financial-tab" data-bs-toggle="tab" data-bs-target="#financial" type="button" role="tab">
-                        <i class="bi bi-cash-stack me-2"></i>
-                        <span class="d-none d-sm-inline">Финансы</span>
+                    <button class="nav-link active px-2 py-2 px-md-3 py-md-3" id="financial-tab" data-bs-toggle="tab" data-bs-target="#financial" type="button" role="tab">
+                        <i class="bi bi-cash-stack d-block d-md-inline me-md-1 fs-5 fs-md-6"></i>
+                        <span class="d-none d-md-inline">Финансы</span>
+                        <small class="d-block d-md-none mt-1">Финансы</small>
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="projects-tab" data-bs-toggle="tab" data-bs-target="#projects" type="button" role="tab">
-                        <i class="bi bi-building me-2"></i>
-                        <span class="d-none d-sm-inline">Проекты</span>
+                    <button class="nav-link px-2 py-2 px-md-3 py-md-3" id="projects-tab" data-bs-toggle="tab" data-bs-target="#projects" type="button" role="tab">
+                        <i class="bi bi-building d-block d-md-inline me-md-1 fs-5 fs-md-6"></i>
+                        <span class="d-none d-md-inline">Проекты</span>
+                        <small class="d-block d-md-none mt-1">Проекты</small>
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="employees-tab" data-bs-toggle="tab" data-bs-target="#employees" type="button" role="tab">
-                        <i class="bi bi-people me-2"></i>
-                        <span class="d-none d-sm-inline">Сотрудники</span>
+                    <button class="nav-link px-2 py-2 px-md-3 py-md-3" id="employees-tab" data-bs-toggle="tab" data-bs-target="#employees" type="button" role="tab">
+                        <i class="bi bi-people d-block d-md-inline me-md-1 fs-5 fs-md-6"></i>
+                        <span class="d-none d-md-inline">Сотрудники</span>
+                        <small class="d-block d-md-none mt-1">Сотрудники</small>
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab">
-                        <i class="bi bi-speedometer2 me-2"></i>
-                        <span class="d-none d-sm-inline">Общая статистика</span>
+                    <button class="nav-link px-2 py-2 px-md-3 py-md-3" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab">
+                        <i class="bi bi-speedometer2 d-block d-md-inline me-md-1 fs-5 fs-md-6"></i>
+                        <span class="d-none d-md-inline">Общая</span>
+                        <small class="d-block d-md-none mt-1">Общее</small>
                     </button>
                 </li>
             </ul>
@@ -79,48 +85,71 @@
 
 @push('styles')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.css">
-<link rel="stylesheet" href="{{ asset('css/analytics.css') }}">
 <style>
+/* Специальные стили для аналитики с синими градиентами */
 .analytics-card {
-    transition: transform 0.2s;
+    background: linear-gradient(145deg, #ffffff 0%, #f8fbff 100%);
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.15);
+    transition: all 0.3s ease;
+    border-left: 4px solid var(--primary-blue);
 }
 
 .analytics-card:hover {
-    transform: translateY(-2px);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 123, 255, 0.25);
+    border-left-color: var(--primary-blue-dark);
 }
 
 .chart-container {
     position: relative;
     height: 400px;
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.15);
 }
 
 .metric-card {
     text-align: center;
     padding: 1.5rem;
-    border-radius: 10px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
     color: white;
     margin-bottom: 1rem;
+    border: none;
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.25);
+    transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 123, 255, 0.35);
 }
 
 .metric-value {
     font-size: 2.5rem;
-    font-weight: bold;
+    font-weight: 700;
     margin-bottom: 0.5rem;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .metric-label {
     font-size: 1rem;
-    opacity: 0.9;
+    opacity: 0.95;
+    font-weight: 500;
 }
 
 .chart-card {
     border: none;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    border-radius: 0.5rem;
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.15);
+    border-radius: 12px;
     overflow: hidden;
+    background: linear-gradient(145deg, #ffffff 0%, #f8fbff 100%);
 }
 
+/* Цветовые градиенты для метрик */
 .bg-revenue {
     background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
 }
@@ -130,11 +159,11 @@
 }
 
 .bg-profit {
-    background: linear-gradient(135deg, #007bff 0%, #6610f2 100%);
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
 }
 
 .bg-projects {
-    background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
 }
 
 .loading-spinner {
@@ -142,6 +171,287 @@
     justify-content: center;
     align-items: center;
     height: 200px;
+}
+
+/* Улучшенные стили для мобильной адаптации */
+.container-fluid {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+}
+
+@media (min-width: 768px) {
+    .container-fluid {
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+}
+
+/* Мобильные вкладки */
+.nav-justified .nav-item {
+    flex: 1;
+}
+
+.nav-justified .nav-link {
+    text-align: center;
+    border-radius: 0.375rem 0.375rem 0 0;
+    transition: all 0.2s ease;
+}
+
+/* Адаптивные размеры шрифтов */
+.fs-md-6 {
+    font-size: 1rem;
+}
+
+@media (min-width: 768px) {
+    .fs-md-6 {
+        font-size: 1rem;
+    }
+}
+
+.form-select-sm {
+    padding: 0.25rem 1.75rem 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+@media (min-width: 768px) {
+    .form-select-md-regular {
+        padding: 0.375rem 2.25rem 0.375rem 0.75rem;
+        font-size: 1rem;
+    }
+}
+
+/* Стили для карточек вкладок */
+.nav-tabs {
+    border-bottom: none;
+}
+
+.nav-tabs .nav-link {
+    border: none;
+    background: transparent;
+    color: #6c757d;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.nav-tabs .nav-link:hover {
+    border-color: transparent;
+    color: #007bff;
+    background: rgba(0, 123, 255, 0.1);
+}
+
+.nav-tabs .nav-link.active {
+    color: #007bff;
+    background: rgba(0, 123, 255, 0.1);
+    border-color: transparent;
+    font-weight: 600;
+}
+
+/* Мобильная адаптация для аналитики */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    
+    .chart-container {
+        height: 280px;
+        padding: 12px;
+    }
+    
+    .metric-card {
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .metric-value {
+        font-size: 1.8rem;
+    }
+    
+    .metric-label {
+        font-size: 0.85rem;
+    }
+    
+    /* Улучшенные адаптивные вкладки */
+    .nav-tabs .nav-link {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.8rem;
+        min-height: 60px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .nav-tabs .nav-link i {
+        font-size: 1.2rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .nav-tabs .nav-link small {
+        font-size: 0.7rem;
+        line-height: 1;
+    }
+    
+    /* Карточки на мобильных */
+    .card {
+        border-radius: 0.5rem;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    
+    .card-header {
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .container-fluid {
+        padding-left: 0.25rem;
+        padding-right: 0.25rem;
+    }
+    
+    .chart-container {
+        height: 220px;
+        padding: 8px;
+    }
+    
+    .metric-card {
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .metric-value {
+        font-size: 1.5rem;
+    }
+    
+    .metric-label {
+        font-size: 0.75rem;
+    }
+    
+    .nav-tabs .nav-link {
+        padding: 0.4rem 0.2rem;
+        min-height: 55px;
+        font-size: 0.75rem;
+    }
+    
+    .nav-tabs .nav-link i {
+        font-size: 1.1rem;
+    }
+    
+    .nav-tabs .nav-link small {
+        font-size: 0.65rem;
+    }
+    
+    /* Более компактные карточки */
+    .card-header {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+    }
+    
+    .card-body {
+        padding: 0.75rem;
+    }
+    
+    /* Уменьшаем отступы */
+    .mb-3, .mb-md-4 {
+        margin-bottom: 0.75rem !important;
+    }
+    
+    .row {
+        margin-left: -0.375rem;
+        margin-right: -0.375rem;
+    }
+    
+    .row > * {
+        padding-left: 0.375rem;
+        padding-right: 0.375rem;
+    }
+}
+
+/* Дополнительные стили для улучшения внешнего вида */
+.card-header-tabs {
+    border-bottom: none;
+}
+
+.card-header-tabs .nav-link {
+    background: transparent;
+    border: none;
+    color: #6c757d;
+    margin: 0 2px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.card-header-tabs .nav-link:hover {
+    color: #007bff;
+    background: rgba(0, 123, 255, 0.1);
+}
+
+.card-header-tabs .nav-link.active {
+    background: rgba(0, 123, 255, 0.15);
+    color: #007bff;
+    font-weight: 600;
+    border: 1px solid rgba(0, 123, 255, 0.2);
+}
+
+/* Анимация загрузки */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 12px;
+    z-index: 10;
+}
+
+.loading-overlay .spinner-border {
+    color: var(--primary-blue);
+    width: 3rem;
+    height: 3rem;
+}
+
+/* Дополнительные утилитарные классы для мобильной адаптации */
+.text-nowrap-mobile {
+    white-space: nowrap;
+}
+
+@media (max-width: 576px) {
+    .text-nowrap-mobile {
+        white-space: normal;
+        word-break: break-word;
+    }
+}
+
+/* Улучшения для кнопок и форм на мобильных */
+@media (max-width: 768px) {
+    .btn {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+    }
+    
+    .form-select {
+        font-size: 0.875rem;
+    }
+}
+
+/* Адаптивные отступы */
+.spacing-mobile {
+    margin-bottom: 1rem;
+}
+
+@media (min-width: 768px) {
+    .spacing-mobile {
+        margin-bottom: 1.5rem;
+    }
 }
 </style>
 @endpush

@@ -137,6 +137,24 @@ class ProjectDocumentController extends BaseFileController
     }
 
     /**
+     * Возвращает HTML модального окна для загрузки документов
+     */
+    public function uploadModal(Project $project)
+    {
+        try {
+            $this->checkProjectAccess($project);
+            
+            return view('partner.projects.tabs.modals.document-modal', compact('project'))->render();
+        } catch (\Exception $e) {
+            Log::error('Error loading upload modal: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка загрузки формы'
+            ], 500);
+        }
+    }
+
+    /**
      * Загрузить документы через модель ProjectDocument
      */
     public function store(Request $request, Project $project)
@@ -146,23 +164,19 @@ class ProjectDocumentController extends BaseFileController
 
             // Валидация
             $request->validate([
-                'files.*' => [
+                'documents.*' => [
                     'required',
                     'file',
                     'max:' . ($this->maxFileSize / 1024), // В килобайтах
                     'mimes:' . implode(',', $this->allowedExtensions),
                 ],
-                'document_type' => 'nullable|string|max:50',
-                'category' => 'nullable|string|max:50',
-                'version' => 'nullable|string|max:10',
-                'document_date' => 'nullable|date',
-                'author' => 'nullable|string|max:255',
-                'is_signed' => 'nullable|boolean',
+                'document_type' => 'nullable|string|max:100',
+                'importance' => 'nullable|string|max:20',
                 'description' => 'nullable|string|max:1000',
             ]);
 
             $uploadedDocuments = [];
-            $files = $request->file('files', []);
+            $files = $request->file('documents', []);
 
             foreach ($files as $file) {
                 $document = $this->createDocumentRecord($project, $file, $request);
@@ -309,12 +323,8 @@ class ProjectDocumentController extends BaseFileController
                 'file_path' => $filePath,
                 'file_size' => $file->getSize(),
                 'mime_type' => $file->getMimeType(),
-                'document_type' => $request->get('document_type', 'contract'),
-                'category' => $request->get('category'),
-                'version' => $request->get('version', '1.0'),
-                'document_date' => $request->get('document_date'),
-                'author' => $request->get('author') ?? auth()->user()->name,
-                'is_signed' => $request->get('is_signed', false),
+                'document_type' => $request->get('document_type'),
+                'importance' => $request->get('importance', 'normal'),
                 'description' => $request->get('description'),
                 'uploaded_by' => auth()->id(),
             ]);
@@ -410,6 +420,75 @@ class ProjectDocumentController extends BaseFileController
     {
         $project = Project::findOrFail($projectId);
         return $this->show($project, $fileId);
+    }
+
+    /**
+     * Получить список уникальных типов документов для проекта
+     */
+    public function getDocumentTypes(Project $project)
+    {
+        try {
+            $this->checkProjectAccess($project);
+
+            // Получаем все типы документов для проекта
+            // Используем прямой запрос без orderBy, чтобы избежать конфликта с distinct()
+            $customTypes = ProjectDocument::where('project_id', $project->id)
+                ->whereNotNull('document_type')
+                ->where('document_type', '!=', '')
+                ->distinct()
+                ->pluck('document_type')
+                ->toArray();
+
+            // Стандартные типы документов
+            $standardTypes = [
+                'contract' => 'Договор',
+                'estimate' => 'Смета', 
+                'plan' => 'План/чертеж',
+                'permit' => 'Разрешение',
+                'technical' => 'Техническая документация',
+                'invoice' => 'Счет',
+                'act' => 'Акт',
+                'certificate' => 'Сертификат',
+                'photo_report' => 'Фотоотчет',
+                'correspondence' => 'Переписка',
+                'other' => 'Другое'
+            ];
+
+            // Комбинируем стандартные и кастомные типы
+            $allTypes = [];
+            
+            // Добавляем стандартные типы
+            foreach ($standardTypes as $key => $label) {
+                $allTypes[] = [
+                    'value' => $key,
+                    'label' => $label,
+                    'is_custom' => false
+                ];
+            }
+
+            // Добавляем кастомные типы (исключаем стандартные)
+            foreach ($customTypes as $type) {
+                if (!array_key_exists($type, $standardTypes)) {
+                    $allTypes[] = [
+                        'value' => $type,
+                        'label' => $type,
+                        'is_custom' => true
+                    ];
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'types' => $allTypes
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error loading document types: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка загрузки типов документов'
+            ], 500);
+        }
     }
 
     /**

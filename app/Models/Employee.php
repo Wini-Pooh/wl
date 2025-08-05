@@ -48,11 +48,13 @@ class Employee extends Model
         'status',
         'description',
         'notes',
+        'is_right_hand',
     ];
 
     protected $casts = [
         'role' => 'string',
         'status' => 'string',
+        'is_right_hand' => 'boolean',
     ];
 
     protected $appends = [
