@@ -1,98 +1,169 @@
 <div class="row">
-    <div class="col-12">
-        @if($templates->count() > 0)
-            <div class="row">
-                @foreach($templates as $template)
-                    <div class="col-md-6 col-lg-4 mb-4">
-                        <div class="card h-100">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <h6 class="card-title mb-0">{{ $template->name }}</h6>
-                                <span class="badge bg-secondary">{{ $template->document_type }}</span>
-                            </div>
-                            <div class="card-body">
-                                @if($template->description)
-                                    <p class="card-text text-muted small">{{ $template->description }}</p>
-                                @endif
-                                
-                                <div class="mb-2">
-                                    <small class="text-muted">
-                                        <i class="fas fa-user"></i> {{ $template->creator->name }}<br>
-                                        <i class="fas fa-calendar"></i> {{ $template->created_at->format('d.m.Y') }}
-                                    </small>
-                                </div>
-                                
-                                @if($template->variables && count($template->variables) > 0)
-                                    <div class="mb-2">
-                                        <small class="text-info">
-                                            <i class="fas fa-code"></i> Переменные: 
-                                            @foreach($template->variables as $variable)
-                                                <span class="badge bg-light text-dark me-1">&#123;&#123;{{ $variable }}&#125;&#125;</span>
-                                            @endforeach
-                                        </small>
-                                    </div>
-                                @endif
-                            </div>
-                            <div class="card-footer">
-                                <div class="btn-group w-100" role="group">
-                                    <a href="{{ route('document-templates.show', $template) }}" 
-                                       class="btn btn-outline-primary btn-sm">
-                                        <i class="fas fa-eye"></i> Просмотр
-                                    </a>
-                                    <button type="button" 
-                                            class="btn btn-primary btn-sm btn-use-template" 
-                                            data-template-id="{{ $template->id }}">
-                                        <i class="fas fa-plus"></i> Использовать
-                                    </button>
-                                    <a href="{{ route('document-templates.edit', $template) }}" 
-                                       class="btn btn-outline-secondary btn-sm">
-                                        <i class="fas fa-edit"></i> Изменить
-                                    </a>
-                                </div>
-                            </div>
+    @if($templates->count() > 0)
+        @foreach($templates as $template)
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card template-card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-file-alt text-primary me-2"></i>
+                            {{ $template->name }}
+                        </h5>
+                        <p class="card-text text-muted">
+                            {{ Str::limit($template->description, 100) }}
+                        </p>
+                        <div class="template-meta">
+                            <small class="text-muted">
+                                <i class="fas fa-calendar me-1"></i>
+                                {{ $template->created_at->format('d.m.Y') }}
+                            </small>
                         </div>
                     </div>
-                @endforeach
+                    <div class="card-footer bg-transparent">
+                        <div class="btn-group w-100" role="group">
+                            <a href="{{ route('documents.create', ['template' => $template->id]) }}" 
+                               class="btn btn-primary btn-sm">
+                                <i class="fas fa-plus me-1"></i>
+                                Создать документ
+                            </a>
+                            <button type="button" 
+                                    class="btn btn-outline-secondary btn-sm"
+                                    onclick="previewTemplate({{ $template->id }})"
+                                    title="Предварительный просмотр">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button type="button" 
+                                    class="btn btn-outline-info btn-sm"
+                                    onclick="editTemplate({{ $template->id }})"
+                                    title="Редактировать">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
-            
-            <!-- Пагинация -->
-            <div class="d-flex justify-content-center">
-                @if($templates->hasPages())
-                    <nav aria-label="Page navigation">
-                        <ul class="pagination">
-                            {{-- Previous Page Link --}}
-                            @if ($templates->onFirstPage())
-                                <li class="page-item disabled"><span class="page-link">‹</span></li>
-                            @else
-                                <li class="page-item"><a class="page-link" href="#" data-page="{{ $templates->currentPage() - 1 }}" data-tab="templates">‹</a></li>
-                            @endif
-
-                            {{-- Pagination Elements --}}
-                            @foreach ($templates->getUrlRange(1, $templates->lastPage()) as $page => $url)
-                                @if ($page == $templates->currentPage())
-                                    <li class="page-item active"><span class="page-link">{{ $page }}</span></li>
-                                @else
-                                    <li class="page-item"><a class="page-link" href="#" data-page="{{ $page }}" data-tab="templates">{{ $page }}</a></li>
-                                @endif
-                            @endforeach
-
-                            {{-- Next Page Link --}}
-                            @if ($templates->hasMorePages())
-                                <li class="page-item"><a class="page-link" href="#" data-page="{{ $templates->currentPage() + 1 }}" data-tab="templates">›</a></li>
-                            @else
-                                <li class="page-item disabled"><span class="page-link">›</span></li>
-                            @endif
-                        </ul>
-                    </nav>
-                @endif
-            </div>
-        @else
+        @endforeach
+    @else
+        <div class="col-12">
             <div class="text-center py-5">
                 <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
-                <h5 class="text-muted">Нет доступных шаблонов</h5>
-                <a href="{{ route('document-templates.create') }}" class="btn btn-primary mt-3">
-                    <i class="fas fa-plus"></i> Создать первый шаблон
+                <h4 class="text-muted">Шаблоны документов не найдены</h4>
+                <p class="text-muted">Создайте первый шаблон для автоматизации создания документов</p>
+                <a href="{{ route('document-templates.create') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>
+                    Создать шаблон
                 </a>
             </div>
-        @endif
+        </div>
+    @endif
+</div>
+
+<!-- Пагинация -->
+@if($templates->hasPages())
+    <div class="d-flex justify-content-center mt-4">
+        {{ $templates->withQueryString()->links() }}
+    </div>
+@endif
+
+<!-- Модальное окно для предварительного просмотра шаблона -->
+<div class="modal fade" id="templatePreviewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Предварительный просмотр шаблона</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="templatePreviewContent">
+                    <div class="text-center py-4">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Загрузка...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                <button type="button" class="btn btn-primary" id="useTemplateBtn">
+                    Использовать шаблон
+                </button>
+            </div>
+        </div>
     </div>
 </div>
+
+<style>
+.template-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid #e9ecef;
+}
+
+.template-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.template-meta {
+    border-top: 1px solid #f8f9fa;
+    padding-top: 10px;
+    margin-top: 10px;
+}
+
+.card-footer .btn-group .btn {
+    flex: 1;
+}
+
+.card-footer .btn-group .btn:not(:first-child) {
+    flex: 0 0 auto;
+    min-width: 40px;
+}
+</style>
+
+<script>
+function previewTemplate(templateId) {
+    // Показываем модальное окно
+    const modal = new bootstrap.Modal(document.getElementById('templatePreviewModal'));
+    modal.show();
+    
+    // Загружаем содержимое шаблона
+    fetch(`/document-templates/${templateId}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('templatePreviewContent').innerHTML = `
+                <div class="mb-3">
+                    <h6><strong>Название:</strong> ${data.name}</h6>
+                    <p class="text-muted">${data.description || 'Описание отсутствует'}</p>
+                </div>
+                <div class="border p-3 bg-light">
+                    <h6>Содержимое шаблона:</h6>
+                    <div class="template-content">${data.content}</div>
+                </div>
+                ${data.variables && data.variables.length > 0 ? `
+                <div class="mt-3">
+                    <h6>Переменные в шаблоне:</h6>
+                    <div class="d-flex flex-wrap gap-2">
+                        ${data.variables.map(variable => `
+                            <span class="badge bg-secondary">\$\{'{{'}\$\{variable\}\$\{'}}'}</span>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : ''}
+            `;
+            
+            // Обновляем кнопку использования шаблона
+            document.getElementById('useTemplateBtn').onclick = function() {
+                window.location.href = `/documents/create?template=${templateId}`;
+            };
+        })
+        .catch(error => {
+            document.getElementById('templatePreviewContent').innerHTML = `
+                <div class="alert alert-danger">
+                    Ошибка загрузки шаблона: ${error.message}
+                </div>
+            `;
+        });
+}
+
+function editTemplate(templateId) {
+    window.location.href = `/document-templates/${templateId}/edit`;
+}
+</script>

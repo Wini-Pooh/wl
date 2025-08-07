@@ -18,6 +18,9 @@
     
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -171,6 +174,88 @@
                     }, options));
                 }
             };
+            
+            // Глобальные утилиты для работы с модальными окнами
+            window.ModalUtils = {
+                // Открывает модальное окно с правильным backdrop
+                open: function(modalSelector) {
+                    const modal = document.querySelector(modalSelector);
+                    if (modal) {
+                        const bsModal = new bootstrap.Modal(modal);
+                        bsModal.show();
+                        console.log('🔓 Модальное окно открыто:', modalSelector);
+                        return bsModal;
+                    } else {
+                        console.error('❌ Модальное окно не найдено:', modalSelector);
+                        return null;
+                    }
+                },
+                
+                // Закрывает модальное окно с очисткой backdrop
+                close: function(modalSelector) {
+                    const modal = document.querySelector(modalSelector);
+                    if (modal) {
+                        const bsModal = bootstrap.Modal.getInstance(modal);
+                        if (bsModal) {
+                            bsModal.hide();
+                        } else {
+                            modal.classList.remove('show');
+                            modal.style.display = 'none';
+                        }
+                        
+                        // Принудительная очистка backdrop
+                        setTimeout(() => {
+                            window.ModalBackdropManager.removeBackdrop(modal);
+                            window.ModalBackdropManager.clearOrphanedBackdrops();
+                        }, 350);
+                        
+                        console.log('🔒 Модальное окно закрыто:', modalSelector);
+                    } else {
+                        console.error('❌ Модальное окно не найдено:', modalSelector);
+                    }
+                },
+                
+                // Принудительно закрывает все модальные окна
+                closeAll: function() {
+                    const modals = document.querySelectorAll('.modal.show');
+                    modals.forEach(modal => {
+                        const bsModal = bootstrap.Modal.getInstance(modal);
+                        if (bsModal) {
+                            bsModal.hide();
+                        } else {
+                            modal.classList.remove('show');
+                            modal.style.display = 'none';
+                        }
+                    });
+                    
+                    // Очищаем все backdrop'ы
+                    setTimeout(() => {
+                        window.ModalBackdropManager.clearAll();
+                    }, 350);
+                    
+                    console.log('🔒 Все модальные окна закрыты');
+                },
+                
+                // Проверяет состояние модальных окон и backdrop'ов
+                diagnose: function() {
+                    const modals = document.querySelectorAll('.modal');
+                    const visibleModals = document.querySelectorAll('.modal.show');
+                    const backdrops = document.querySelectorAll('.modal-backdrop');
+                    
+                    console.log('🔍 Диагностика модальных окон:');
+                    console.log('  Всего модальных окон:', modals.length);
+                    console.log('  Видимых модальных окон:', visibleModals.length);
+                    console.log('  Backdrop\'ов:', backdrops.length);
+                    console.log('  Body имеет класс modal-open:', document.body.classList.contains('modal-open'));
+                    
+                    return {
+                        total: modals.length,
+                        visible: visibleModals.length,
+                        backdrops: backdrops.length,
+                        bodyHasModalOpen: document.body.classList.contains('modal-open')
+                    };
+                }
+            };
 
             // Обработка успешного ответа формы
             function handleFormSuccess(response, $form) {
@@ -182,7 +267,20 @@
                 // Закрываем модальное окно если форма внутри модального окна
                 const $modal = $form.closest('.modal');
                 if ($modal.length) {
-                    $modal.modal('hide');
+                    const modal = $modal[0];
+                    const bsModal = bootstrap.Modal.getInstance(modal);
+                    
+                    if (bsModal) {
+                        bsModal.hide();
+                    } else {
+                        $modal.modal('hide');
+                    }
+                    
+                    // Используем новую систему управления backdrop
+                    setTimeout(() => {
+                        window.ModalBackdropManager.removeBackdrop(modal);
+                        window.ModalBackdropManager.clearOrphanedBackdrops();
+                    }, 350);
                 }
 
                 // Очищаем форму
@@ -426,107 +524,261 @@
             });
 
             
-            // Глобальная функция для очистки backdrop модального окна
-            window.clearModalBackdrop = function() {
-                console.log('Clearing modal backdrop');
+            // Улучшенная система управления modal-backdrop
+            window.ModalBackdropManager = {
+                // Создает backdrop точно после модального окна
+                createBackdrop: function(modal) {
+                    // Проверяем, есть ли уже backdrop для этого модального окна
+                    const existingBackdrop = modal.nextElementSibling;
+                    if (existingBackdrop && existingBackdrop.classList.contains('modal-backdrop')) {
+                        return existingBackdrop;
+                    }
+                    
+                    // Создаем новый backdrop
+                    const backdrop = document.createElement('div');
+                    backdrop.className = 'modal-backdrop fade show';
+                    backdrop.setAttribute('data-modal-id', modal.id || 'unknown');
+                    
+                    // Вставляем backdrop сразу после модального окна
+                    modal.parentNode.insertBefore(backdrop, modal.nextSibling);
+                    
+                    console.log('✅ Backdrop создан для модального окна:', modal.id);
+                    return backdrop;
+                },
                 
-                // Убираем все backdrop элементы
-                const backdrops = document.querySelectorAll('.modal-backdrop');
-                console.log('Found backdrops:', backdrops.length);
-                backdrops.forEach(backdrop => backdrop.remove());
-                
-                // Убираем классы modal-open с body
-                document.body.classList.remove('modal-open');
-                document.body.style.removeProperty('overflow');
-                document.body.style.removeProperty('padding-right');
-                
-                console.log('Modal backdrop cleared');
-            };
-            
-            // Функция для инициализации обработчиков модальных окон
-            function initModalHandlers() {
-                // Находим все модальные окна
-                const modals = document.querySelectorAll('.modal');
-                
-                modals.forEach(function(modal) {
-                    // Добавляем обработчик для события hidden.bs.modal
-                    modal.addEventListener('hidden.bs.modal', function() {
-                        console.log('Modal hidden event fired for:', modal.id);
-                        setTimeout(function() {
-                            window.clearModalBackdrop();
-                        }, 100);
+                // Удаляет backdrop для конкретного модального окна
+                removeBackdrop: function(modal) {
+                    const modalId = modal.id || 'unknown';
+                    
+                    // Ищем backdrop сразу после модального окна
+                    let backdrop = modal.nextElementSibling;
+                    if (backdrop && backdrop.classList.contains('modal-backdrop')) {
+                        backdrop.remove();
+                        console.log('🗑️ Backdrop удален для модального окна:', modalId);
+                        return true;
+                    }
+                    
+                    // Если не найден рядом, ищем по data-modal-id
+                    const backdrops = document.querySelectorAll(`[data-modal-id="${modalId}"]`);
+                    backdrops.forEach(b => {
+                        b.remove();
+                        console.log('🗑️ Backdrop удален по ID для модального окна:', modalId);
                     });
                     
-                    // Добавляем обработчики для всех кнопок закрытия
+                    return backdrops.length > 0;
+                },
+                
+                // Очищает все "потерянные" backdrop'ы
+                clearOrphanedBackdrops: function() {
+                    const allBackdrops = document.querySelectorAll('.modal-backdrop');
+                    const visibleModals = document.querySelectorAll('.modal.show');
+                    
+                    if (allBackdrops.length > visibleModals.length) {
+                        console.log('🧹 Найдены потерянные backdrop\'ы, очищаем...');
+                        
+                        allBackdrops.forEach(backdrop => {
+                            const modalId = backdrop.getAttribute('data-modal-id');
+                            const correspondingModal = modalId ? document.getElementById(modalId) : null;
+                            
+                            // Удаляем backdrop если соответствующее модальное окно не отображается
+                            if (!correspondingModal || !correspondingModal.classList.contains('show')) {
+                                backdrop.remove();
+                                console.log('🗑️ Удален потерянный backdrop для:', modalId);
+                            }
+                        });
+                        
+                        // Очищаем стили body если нет видимых модальных окон
+                        if (visibleModals.length === 0) {
+                            document.body.classList.remove('modal-open');
+                            document.body.style.removeProperty('overflow');
+                            document.body.style.removeProperty('padding-right');
+                        }
+                    }
+                },
+                
+                // Полная очистка всех backdrop'ов
+                clearAll: function() {
+                    const backdrops = document.querySelectorAll('.modal-backdrop');
+                    console.log('🧹 Очистка всех backdrop\'ов, найдено:', backdrops.length);
+                    
+                    backdrops.forEach(backdrop => backdrop.remove());
+                    
+                    // Восстанавливаем стили body
+                    document.body.classList.remove('modal-open');
+                    document.body.style.removeProperty('overflow');
+                    document.body.style.removeProperty('padding-right');
+                    
+                    console.log('✅ Все backdrop\'ы очищены');
+                }
+            };
+            
+            // Обратная совместимость
+            window.clearModalBackdrop = function() {
+                window.ModalBackdropManager.clearAll();
+            };
+            
+            // Улучшенная функция для инициализации обработчиков модальных окон
+            function initModalHandlers() {
+                console.log('🔧 Инициализация обработчиков модальных окон...');
+                
+                // Находим все модальные окна
+                const modals = document.querySelectorAll('.modal');
+                console.log('📋 Найдено модальных окон:', modals.length);
+                
+                modals.forEach(function(modal, index) {
+                    const modalId = modal.id || `modal-${index}`;
+                    console.log(`🎯 Настройка обработчиков для модального окна: ${modalId}`);
+                    
+                    // Удаляем старые обработчики чтобы избежать дублирования
+                    modal.removeEventListener('show.bs.modal', modal._showHandler);
+                    modal.removeEventListener('shown.bs.modal', modal._shownHandler);
+                    modal.removeEventListener('hide.bs.modal', modal._hideHandler);
+                    modal.removeEventListener('hidden.bs.modal', modal._hiddenHandler);
+                    
+                    // Обработчик начала показа модального окна
+                    modal._showHandler = function(e) {
+                        console.log('📤 Модальное окно начинает показываться:', modalId);
+                        
+                        // Убираем потерянные backdrop'ы перед показом нового
+                        window.ModalBackdropManager.clearOrphanedBackdrops();
+                    };
+                    
+                    // Обработчик завершения показа модального окна
+                    modal._shownHandler = function(e) {
+                        console.log('✅ Модальное окно полностью показано:', modalId);
+                        
+                        // Создаем backdrop сразу после модального окна
+                        setTimeout(() => {
+                            window.ModalBackdropManager.createBackdrop(modal);
+                        }, 50);
+                    };
+                    
+                    // Обработчик начала скрытия модального окна
+                    modal._hideHandler = function(e) {
+                        console.log('📥 Модальное окно начинает скрываться:', modalId);
+                        
+                        // Удаляем backdrop для этого модального окна
+                        window.ModalBackdropManager.removeBackdrop(modal);
+                    };
+                    
+                    // Обработчик завершения скрытия модального окна
+                    modal._hiddenHandler = function(e) {
+                        console.log('❌ Модальное окно полностью скрыто:', modalId);
+                        
+                        // Дополнительная очистка и проверка
+                        setTimeout(() => {
+                            window.ModalBackdropManager.removeBackdrop(modal);
+                            window.ModalBackdropManager.clearOrphanedBackdrops();
+                        }, 100);
+                    };
+                    
+                    // Добавляем обработчики
+                    modal.addEventListener('show.bs.modal', modal._showHandler);
+                    modal.addEventListener('shown.bs.modal', modal._shownHandler);
+                    modal.addEventListener('hide.bs.modal', modal._hideHandler);
+                    modal.addEventListener('hidden.bs.modal', modal._hiddenHandler);
+                    
+                    // Обработчики для кнопок закрытия
                     const closeButtons = modal.querySelectorAll('[data-bs-dismiss="modal"], .btn-close');
                     closeButtons.forEach(function(button) {
-                        button.addEventListener('click', function() {
-                            console.log('Modal close button clicked for:', modal.id);
-                            setTimeout(function() {
-                                window.clearModalBackdrop();
+                        // Удаляем старый обработчик если есть
+                        button.removeEventListener('click', button._closeHandler);
+                        
+                        button._closeHandler = function(e) {
+                            console.log('🔘 Кнопка закрытия нажата для модального окна:', modalId);
+                            
+                            // Задержка для корректного срабатывания Bootstrap событий
+                            setTimeout(() => {
+                                window.ModalBackdropManager.removeBackdrop(modal);
+                                window.ModalBackdropManager.clearOrphanedBackdrops();
                             }, 350);
-                        });
+                        };
+                        
+                        button.addEventListener('click', button._closeHandler);
+                    });
+                    
+                    // Обработчик клика по backdrop для закрытия
+                    modal.addEventListener('click', function(e) {
+                        if (e.target === modal) {
+                            console.log('🖱️ Клик по backdrop модального окна:', modalId);
+                            setTimeout(() => {
+                                window.ModalBackdropManager.removeBackdrop(modal);
+                                window.ModalBackdropManager.clearOrphanedBackdrops();
+                            }, 350);
+                        }
                     });
                 });
+                
+                console.log('✅ Инициализация обработчиков модальных окон завершена');
             }
             
             // Инициализируем обработчики при загрузке DOM
             document.addEventListener('DOMContentLoaded', function() {
+                console.log('🚀 DOM загружен, инициализируем обработчики модальных окон...');
                 initModalHandlers();
             });
             
             // Переинициализируем обработчики при изменении DOM (для динамически добавляемых модальных окон)
-            const observer = new MutationObserver(function(mutations) {
+            const modalObserver = new MutationObserver(function(mutations) {
+                let shouldReinit = false;
+                
                 mutations.forEach(function(mutation) {
                     if (mutation.type === 'childList') {
                         mutation.addedNodes.forEach(function(node) {
                             if (node.nodeType === 1 && (node.classList.contains('modal') || node.querySelector('.modal'))) {
-                                console.log('New modal detected, reinitializing handlers');
-                                setTimeout(initModalHandlers, 100);
+                                console.log('🆕 Обнаружено новое модальное окно, переинициализируем обработчики');
+                                shouldReinit = true;
                             }
                         });
                     }
                 });
+                
+                if (shouldReinit) {
+                    setTimeout(initModalHandlers, 100);
+                }
             });
             
-            observer.observe(document.body, {
+            modalObserver.observe(document.body, {
                 childList: true,
                 subtree: true
             });
             
-            // Обработчик для очистки backdrop при клике на Escape
+            // Обработчик для очистки backdrop при нажатии Escape
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
-                    setTimeout(function() {
-                        window.clearModalBackdrop();
+                    console.log('⌨️ Нажата клавиша Escape, очищаем backdrop через 300мс');
+                    setTimeout(() => {
+                        window.ModalBackdropManager.clearOrphanedBackdrops();
                     }, 300);
                 }
             });
             
-            // Обработчик для очистки backdrop при клике вне модального окна
+            // Обработчик для клика по backdrop (если он все же появился не в нужном месте)
             document.addEventListener('click', function(e) {
                 if (e.target.classList.contains('modal-backdrop')) {
-                    setTimeout(function() {
-                        window.clearModalBackdrop();
+                    console.log('🖱️ Клик по backdrop, очищаем через 300мс');
+                    setTimeout(() => {
+                        window.ModalBackdropManager.clearAll();
                     }, 300);
                 }
             });
             
-            // Дополнительная проверка каждые 2 секунды для очистки "потерянных" backdrop
+            // Периодическая проверка и очистка "потерянных" backdrop каждые 3 секунды
             setInterval(function() {
                 const backdrops = document.querySelectorAll('.modal-backdrop');
                 const visibleModals = document.querySelectorAll('.modal.show');
                 
                 if (backdrops.length > 0 && visibleModals.length === 0) {
-                    console.log('Found orphaned backdrop, cleaning up');
-                    window.clearModalBackdrop();
+                    console.log('🔍 Периодическая проверка: найдены потерянные backdrop\'ы');
+                    window.ModalBackdropManager.clearAll();
+                } else if (backdrops.length > visibleModals.length) {
+                    console.log('🔍 Периодическая проверка: несоответствие количества backdrop\'ов и модальных окон');
+                    window.ModalBackdropManager.clearOrphanedBackdrops();
                 }
-            }, 2000);
+            }, 3000);
         </script>
         
-        <!-- Подключаем скрипт для исправления проблемы с modal backdrop -->
-        <script src="<?php echo e(asset('js/bootstrap-modal-fix.js')); ?>"></script>
-        
+     
         <!-- Диагностический скрипт для поиска JavaScript ошибок (только для отладки) -->
       
         

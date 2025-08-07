@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Project;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
@@ -22,14 +23,38 @@ class HomeController extends Controller
     /**
      * Show the application dashboard.
      *
-     * @return \Illuminate\Contracts\Support\Renderable
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Contracts\Support\Renderable
      */
     public function index()
     {
+        /** @var User $user */
         $user = Auth::user();
+        
+        // Редирект пользователя на соответствующую страницу в зависимости от роли
+        if ($user->isAdmin()) {
+            // Админы переходят на страницу управления пользователями 
+            return redirect()->route('admin.users.index');
+        }
+        
+        if ($user->isPartner()) {
+            // Партнеры переходят на аналитический дашборд
+            return redirect()->route('partner.dashboard');
+        }
+        
+        if ($user->isEmployee() || $user->isForeman() || $user->isEstimator()) {
+            // Все типы сотрудников переходят на свой дашборд
+            return redirect()->route('employee.dashboard');
+        }
+        
+        if ($user->isClient()) {
+            // Клиенты переходят на просмотр своих проектов
+            return redirect()->route('partner.projects.index');
+        }
+        
+        // Если роль не определена, показываем стандартную страницу
         $data = [];
 
-        // Данные для клиентов
+        // Данные для клиентов (резервный вариант)
         if ($user->isClient()) {
             // Получаем проекты клиента (по имени, телефону или email)
             $projects = Project::where(function($query) use ($user) {

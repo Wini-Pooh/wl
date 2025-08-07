@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.auth')
 
 @section('head')
     <script src="{{ asset('js/phone-mask.js') }}"></script>

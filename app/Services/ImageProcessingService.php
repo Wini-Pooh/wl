@@ -18,7 +18,7 @@ class ImageProcessingService
     /**
      * ImageManager instance
      */
-    private ImageManager $imageManager;
+    private ?ImageManager $imageManager;
 
     /**
      * Качество сжатия WebP (0-100)
@@ -57,12 +57,19 @@ class ImageProcessingService
     public function __construct()
     {
         try {
-            // Пытаемся использовать Imagick драйвер
-            $this->imageManager = new ImageManager(new Driver());
+            // Проверяем наличие расширений
+            if (extension_loaded('imagick')) {
+                $this->imageManager = new ImageManager(new Driver());
+            } elseif (extension_loaded('gd')) {
+                $this->imageManager = new ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
+            } else {
+                // Если ни одно расширение не доступно, устанавливаем null
+                Log::warning('Ни GD, ни Imagick расширения не доступны. ImageProcessingService отключен.');
+                $this->imageManager = null;
+            }
         } catch (\Exception $e) {
-            // Если Imagick недоступен, используем GD драйвер
-            Log::warning('Imagick недоступен, используется GD драйвер: ' . $e->getMessage());
-            $this->imageManager = new ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
+            Log::warning('Ошибка инициализации ImageManager: ' . $e->getMessage());
+            $this->imageManager = null;
         }
         
         $this->webpQuality = config('image_processing.webp_quality', 85);
@@ -129,6 +136,22 @@ class ImageProcessingService
      */
     private function createOptimizedWebP(UploadedFile $file, string $directory, string $filename): array
     {
+        // Проверяем, доступен ли imageManager
+        if ($this->imageManager === null) {
+            Log::warning('ImageManager недоступен, сохраняем файл без обработки');
+            $originalPath = $file->store($directory, 'public');
+            return [
+                'path' => $originalPath,
+                'original_name' => $file->getClientOriginalName(),
+                'size' => $file->getSize(),
+                'mime_type' => $file->getMimeType(),
+                'metadata' => [
+                    'processed' => false,
+                    'reason' => 'ImageManager недоступен'
+                ]
+            ];
+        }
+        
         try {
             // Загружаем изображение через Intervention Image
             $image = $this->imageManager->read($file->getRealPath());

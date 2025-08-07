@@ -682,7 +682,7 @@ class ProjectController extends Controller
         }
     }
 
-    /**
+        /**
      * Показать документы проекта
      */
     public function showDocuments(Request $request, Project $project)
@@ -694,11 +694,11 @@ class ProjectController extends Controller
         
         // Получаем фильтры из запроса
         $filters = [
-            'search' => $request->get('search'),
-            'document_type' => $request->get('document_type'),
-            'status' => $request->get('status'),
-            'date_from' => $request->get('date_from'),
-            'date_to' => $request->get('date_to'),
+            'search' => $request->get('search', ''),
+            'document_type' => $request->get('document_type', ''),
+            'status' => $request->get('status', ''),
+            'date_from' => $request->get('date_from', ''),
+            'date_to' => $request->get('date_to', ''),
             'sort' => $request->get('sort', 'created_at_desc')
         ];
         
@@ -708,8 +708,8 @@ class ProjectController extends Controller
         // Применяем фильтры
         if (!empty($filters['search'])) {
             $query->where(function($q) use ($filters) {
-                $q->where('name', 'LIKE', '%' . $filters['search'] . '%')
-                  ->orWhere('original_name', 'LIKE', '%' . $filters['search'] . '%');
+                $q->where('original_name', 'LIKE', '%' . $filters['search'] . '%')
+                  ->orWhere('description', 'LIKE', '%' . $filters['search'] . '%');
             });
         }
         
@@ -718,7 +718,7 @@ class ProjectController extends Controller
         }
         
         if (!empty($filters['status'])) {
-            $query->where('status', $filters['status']);
+            $query->where('signature_status', $filters['status']);
         }
         
         if (!empty($filters['date_from'])) {
@@ -767,10 +767,10 @@ class ProjectController extends Controller
         ];
         
         $statusOptions = [
-            'active' => 'Активный',
-            'draft' => 'Черновик',
-            'archived' => 'Архивный',
+            'unsigned' => 'Не подписан',
+            'signing' => 'На подписании',
             'signed' => 'Подписан',
+            'rejected' => 'Отклонен',
         ];
         
         $sortOptions = [
@@ -793,6 +793,87 @@ class ProjectController extends Controller
     }
 
     /**
+     * Показать форму создания нового проекта
+     */
+    public function create()
+    {
+        return view('partner.projects.create');
+    }
+
+    /**
+     * Сохранить новый проект
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            // Обязательные поля
+            'client_first_name' => 'required|string|max:255',
+            'client_last_name' => 'required|string|max:255',
+            'client_phone' => 'required|string|max:255',
+            'object_type' => 'required|string|max:255',
+            'work_type' => 'required|string|max:255',
+            'project_status' => 'required|string|max:255',
+            
+            // Паспортные данные
+            'passport_series' => 'nullable|string|max:255',
+            'passport_number' => 'nullable|string|max:255',
+            'passport_issued_by' => 'nullable|string|max:255',
+            'passport_issued_date' => 'nullable|date',
+            'passport_department_code' => 'nullable|string|max:255',
+            
+            // Личные данные
+            'birth_date' => 'nullable|date',
+            'birth_place' => 'nullable|string|max:255',
+            'client_email' => 'nullable|email|max:255',
+            
+            // Адрес прописки
+            'registration_postal_code' => 'nullable|string|max:255',
+            'registration_city' => 'nullable|string|max:255',
+            'registration_street' => 'nullable|string|max:255',
+            'registration_house' => 'nullable|string|max:255',
+            'registration_apartment' => 'nullable|string|max:255',
+            
+            // Характеристики объекта
+            'apartment_number' => 'nullable|string|max:255',
+            'object_city' => 'nullable|string|max:255',
+            'object_street' => 'nullable|string|max:255',
+            'object_house' => 'nullable|string|max:255',
+            'object_entrance' => 'nullable|string|max:255',
+            'object_area' => 'nullable|numeric|min:0',
+            'camera_link' => 'nullable|string|max:255',
+            
+            // Сроки
+            'contract_date' => 'nullable|date',
+            'work_start_date' => 'nullable|date',
+            'estimated_end_date' => 'nullable|date',
+            'contract_number' => 'nullable|string|max:255',
+        ]);
+        
+        // Добавляем ID партнера
+        $validated['partner_id'] = Auth::id();
+        
+        // Устанавливаем финансовые показатели по умолчанию
+        $validated['work_cost'] = 0.00;
+        $validated['materials_cost'] = 0.00;
+        $validated['additional_work_cost'] = 0.00;
+        $validated['total_cost'] = 0.00;
+        
+        try {
+            $project = Project::create($validated);
+            
+            return redirect()
+                ->route('partner.projects.show', $project)
+                ->with('success', 'Проект успешно создан');
+                
+        } catch (\Exception $e) {
+            Log::error('Error creating project: ' . $e->getMessage());
+            return back()
+                ->withInput()
+                ->with('error', 'Ошибка при создании проекта');
+        }
+    }
+
+    /**
      * Загрузить документы проекта
      */
     public function uploadDocuments(Request $request, Project $project)
@@ -806,7 +887,6 @@ class ProjectController extends Controller
             'documents' => 'required|array',
             'documents.*' => 'file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,txt,rtf,zip,rar,7z,jpg,jpeg,png,gif,webp,svg|max:51200', // 50MB
             'document_type' => 'nullable|string|max:50',
-            'status' => 'nullable|string|in:active,draft,archived',
             'description' => 'nullable|string|max:1000',
         ]);
 
@@ -907,5 +987,139 @@ class ProjectController extends Controller
             Log::error('Error downloading document: ' . $e->getMessage());
             abort(404, 'Файл не найден');
         }
+    }
+
+    /**
+     * Показать форму редактирования проекта
+     */
+    public function edit(Project $project)
+    {
+        // Проверка доступа
+        if (!$this->checkProjectAccess($project)) {
+            abort(403, 'Нет доступа к этому проекту');
+        }
+
+        // Проверяем права на редактирование
+        /** @var User $user */
+        $user = Auth::user();
+        if (!$user->hasRole(['partner', 'employee', 'admin'])) {
+            abort(403, 'Недостаточно прав для редактирования проекта');
+        }
+
+        // Получаем список сотрудников для назначения
+        $employees = Employee::all();
+
+        return view('partner.projects.edit', compact('project', 'employees'));
+    }
+
+    /**
+     * Обновить проект
+     */
+    public function update(Request $request, Project $project)
+    {
+        // Проверка доступа
+        if (!$this->checkProjectAccess($project)) {
+            abort(403, 'Нет доступа к этому проекту');
+        }
+
+        // Проверяем права на редактирование
+        /** @var User $user */
+        $user = Auth::user();
+        if (!$user->hasRole(['partner', 'employee', 'admin'])) {
+            abort(403, 'Недостаточно прав для редактирования проекта');
+        }
+
+        $validated = $request->validate([
+            // Обязательные поля
+            'client_first_name' => 'required|string|max:255',
+            'client_last_name' => 'required|string|max:255',
+            'client_phone' => 'required|string|max:255',
+            'object_type' => 'required|string|max:255',
+            'work_type' => 'required|string|max:255',
+            'project_status' => 'required|string|max:255',
+            
+            // Паспортные данные
+            'passport_series' => 'nullable|string|max:255',
+            'passport_number' => 'nullable|string|max:255',
+            'passport_issued_by' => 'nullable|string|max:255',
+            'passport_issued_date' => 'nullable|date',
+            'passport_department_code' => 'nullable|string|max:255',
+            
+            // Личные данные
+            'birth_date' => 'nullable|date',
+            'birth_place' => 'nullable|string|max:255',
+            'client_email' => 'nullable|email|max:255',
+            
+            // Адрес прописки
+            'registration_postal_code' => 'nullable|string|max:255',
+            'registration_city' => 'nullable|string|max:255',
+            'registration_street' => 'nullable|string|max:255',
+            'registration_house' => 'nullable|string|max:255',
+            'registration_apartment' => 'nullable|string|max:255',
+            
+            // Характеристики объекта
+            'apartment_number' => 'nullable|string|max:255',
+            'object_city' => 'nullable|string|max:255',
+            'object_street' => 'nullable|string|max:255',
+            'object_house' => 'nullable|string|max:255',
+            'object_entrance' => 'nullable|string|max:255',
+            'object_area' => 'nullable|numeric|min:0',
+            'camera_link' => 'nullable|string|max:255',
+            
+            // Финансовые показатели (только для отображения, не обновляются)
+            // work_cost, materials_cost, additional_work_cost, total_cost - автоматически из смет
+            
+            // Сроки
+            'contract_date' => 'nullable|date',
+            'work_start_date' => 'nullable|date',
+            'estimated_end_date' => 'nullable|date',
+            'contract_number' => 'nullable|string|max:255',
+        ]);
+
+        try {
+            $project->update($validated);
+
+            return redirect()
+                ->route('partner.projects.show', $project)
+                ->with('success', 'Проект успешно обновлен');
+
+        } catch (\Exception $e) {
+            Log::error('Error updating project: ' . $e->getMessage());
+            return back()
+                ->withInput()
+                ->with('error', 'Ошибка при обновлении проекта');
+        }
+    }
+
+    /**
+     * Поиск проектов по номеру телефона
+     */
+    public function searchByPhone(Request $request)
+    {
+        $request->validate([
+            'phone' => 'required|string'
+        ]);
+        
+        /** @var User $user */
+        $user = Auth::user();
+        
+        $query = Project::where('client_phone', 'like', '%' . $request->phone . '%');
+        
+        // Фильтрация в зависимости от роли пользователя
+        if ($user->hasRole('admin')) {
+            // Админ видит все проекты
+        } elseif ($user->hasRole('partner')) {
+            // Партнер видит только свои проекты
+            $query->where('partner_id', $user->id);
+        } elseif ($user->hasRole('employee') || $user->hasRole('foreman')) {
+            // Сотрудники и прорабы видят проекты своего партнера
+            $projects = ProjectAccessHelper::getAccessibleProjects($user);
+            $projectIds = $projects->pluck('id');
+            $query->whereIn('id', $projectIds);
+        }
+        
+        $projects = $query->get();
+        
+        return response()->json($projects);
     }
 }

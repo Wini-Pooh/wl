@@ -68,7 +68,6 @@ Route::prefix('partner')->name('partner.')->group(function () {
         Route::get('projects/{project}/page/design', [App\Http\Controllers\Partner\ProjectController::class, 'showDesign'])->name('projects.design');
         Route::get('projects/{project}/page/schemes', [App\Http\Controllers\Partner\ProjectController::class, 'showSchemes'])->name('projects.schemes');
         Route::get('projects/{project}/page/documents', [App\Http\Controllers\Partner\ProjectController::class, 'showDocuments'])->name('projects.documents');
-        
         // Действия со схемами проекта
         Route::post('projects/{project}/schemes/upload', [App\Http\Controllers\Partner\ProjectController::class, 'uploadSchemes'])->name('projects.schemes.upload');
         Route::delete('projects/{project}/schemes/{schemeId}', [App\Http\Controllers\Partner\ProjectController::class, 'deleteScheme'])->name('projects.schemes.delete');
@@ -171,13 +170,10 @@ Route::prefix('partner')->name('partner.')->group(function () {
         Route::delete('schemes/{fileId}', [App\Http\Controllers\Partner\ProjectSchemeController::class, 'destroy'])->name('schemes.destroy');
         
         // Документы проекта
-        Route::get('documents', [App\Http\Controllers\Partner\ProjectDocumentController::class, 'index'])->name('documents.index');
-        Route::get('documents/types', [App\Http\Controllers\Partner\ProjectDocumentController::class, 'getDocumentTypes'])->name('documents.types');
-        Route::get('documents/upload-modal', [App\Http\Controllers\Partner\ProjectDocumentController::class, 'uploadModal'])->name('documents.upload-modal');
-        Route::post('documents', [App\Http\Controllers\Partner\ProjectDocumentController::class, 'store'])->name('documents.store');
-        Route::get('documents/{fileId}/download', [App\Http\Controllers\Partner\ProjectDocumentController::class, 'download'])->name('documents.download');
-        Route::get('documents/{fileId}', [App\Http\Controllers\Partner\ProjectDocumentController::class, 'show'])->name('documents.show');
-        Route::delete('documents/{fileId}', [App\Http\Controllers\Partner\ProjectDocumentController::class, 'destroy'])->name('documents.destroy');
+        Route::get('documents', [App\Http\Controllers\Partner\ProjectController::class, 'showDocuments'])->name('documents.index');
+        Route::post('documents/upload', [App\Http\Controllers\Partner\ProjectController::class, 'uploadDocuments'])->name('documents.upload');
+        Route::delete('documents/{documentId}', [App\Http\Controllers\Partner\ProjectController::class, 'deleteDocument'])->name('documents.delete');
+        Route::get('documents/{documentId}/download', [App\Http\Controllers\Partner\ProjectController::class, 'downloadDocument'])->name('documents.download');
         
         // Финансовые данные - основные методы
         Route::get('finance', [App\Http\Controllers\Partner\ProjectFinanceController::class, 'index'])->name('finance.index');

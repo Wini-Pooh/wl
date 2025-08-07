@@ -67,10 +67,11 @@
                 @if(Auth::check())
                 <li class="nav-item">
                     <a class="nav-link" href="{{ route('documents.index') }}">
-                        <i class="bi bi-file-earmark-text-fill"></i> 
+                        <i class="bi bi-file-earmark-text"></i> 
                         <span class="menu-text">{{ __('Документы') }}</span>
                     </a>
                 </li>
+                @endif
                 
                 <!-- Меню тарифов (для всех авторизованных пользователей) -->
                 <li class="nav-item">
@@ -79,7 +80,6 @@
                         <span class="menu-text">{{ __('Тарифы') }}</span>
                     </a>
                 </li>
-                @endif
                 
                 <!-- Меню сотрудников (только для партнеров, сотрудников и админов - НЕ прорабов) -->
                 @if(Auth::check() && (Auth::user()->isPartner() || Auth::user()->isEmployee() || Auth::user()->isAdmin()))

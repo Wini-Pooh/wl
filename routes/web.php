@@ -28,25 +28,47 @@ Route::get('/test-employees-api', function () {
     return view('test-employees-api');
 })->middleware('auth')->name('test.employees.api');
 
+// Диагностика AJAX запросов
+Route::get('/debug/ajax', function () {
+    return view('debug.ajax-debug');
+})->middleware('auth')->name('debug.ajax');
+
 Auth::routes();
+
+// Тестовый маршрут
+Route::get('/test', [App\Http\Controllers\TestController::class, 'test'])->name('test');
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 
-// Система документов и электронной подписи
+// Система документооборота
 Route::middleware(['auth'])->group(function () {
-    // Документы
+    // Основные маршруты документов
     Route::get('/documents', [App\Http\Controllers\DocumentController::class, 'index'])->name('documents.index');
     Route::get('/documents/create', [App\Http\Controllers\DocumentController::class, 'create'])->name('documents.create');
     Route::post('/documents', [App\Http\Controllers\DocumentController::class, 'store'])->name('documents.store');
     Route::get('/documents/{document}', [App\Http\Controllers\DocumentController::class, 'show'])->name('documents.show');
+    Route::get('/documents/{document}/edit', [App\Http\Controllers\DocumentController::class, 'edit'])->name('documents.edit');
+    Route::put('/documents/{document}', [App\Http\Controllers\DocumentController::class, 'update'])->name('documents.update');
+    // Route::delete('/documents/{document}', [App\Http\Controllers\DocumentController::class, 'destroy'])->name('documents.destroy'); // УДАЛЕНИЕ ОТКЛЮЧЕНО
+    
+    // Отправка и подписание документов
     Route::post('/documents/{document}/send', [App\Http\Controllers\DocumentController::class, 'send'])->name('documents.send');
     Route::post('/documents/{document}/sign', [App\Http\Controllers\DocumentController::class, 'sign'])->name('documents.sign');
-    Route::get('/documents/{document}/verify', [App\Http\Controllers\DocumentController::class, 'verifySignature'])->name('documents.verify');
-    Route::get('/documents/{document}/export-signature', [App\Http\Controllers\DocumentController::class, 'exportSignature'])->name('documents.export-signature');
+    Route::post('/documents/{document}/reject', [App\Http\Controllers\DocumentController::class, 'reject'])->name('documents.reject');
+    Route::get('/documents/{document}/verify', [App\Http\Controllers\DocumentController::class, 'verify'])->name('documents.verify');
     Route::get('/documents/{document}/download', [App\Http\Controllers\DocumentController::class, 'download'])->name('documents.download');
-    Route::delete('/documents/{document}', [App\Http\Controllers\DocumentController::class, 'destroy'])->name('documents.destroy');
+    Route::get('/documents/{document}/export-signature', [App\Http\Controllers\DocumentController::class, 'exportSignature'])->name('documents.export-signature');
     
-    // Шаблоны документов
+    // AJAX маршруты для документов
+    Route::get('/api/projects/{project}/data', [App\Http\Controllers\DocumentController::class, 'getProjectData'])->name('api.projects.data');
+    Route::post('/api/documents/preview', [App\Http\Controllers\DocumentController::class, 'preview'])->name('api.documents.preview');
+    
+    // Тестовая страница для отладки подписи документов
+    Route::get('/test-sign', function() {
+        return view('test-sign');
+    })->name('test.sign');
+    
+    // Маршруты для шаблонов документов
     Route::get('/document-templates', [App\Http\Controllers\DocumentTemplateController::class, 'index'])->name('document-templates.index');
     Route::get('/document-templates/create', [App\Http\Controllers\DocumentTemplateController::class, 'create'])->name('document-templates.create');
     Route::post('/document-templates', [App\Http\Controllers\DocumentTemplateController::class, 'store'])->name('document-templates.store');
@@ -55,8 +77,10 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/document-templates/{template}', [App\Http\Controllers\DocumentTemplateController::class, 'update'])->name('document-templates.update');
     Route::delete('/document-templates/{template}', [App\Http\Controllers\DocumentTemplateController::class, 'destroy'])->name('document-templates.destroy');
     Route::get('/document-templates/{template}/get', [App\Http\Controllers\DocumentTemplateController::class, 'getTemplate'])->name('document-templates.get');
-    
-    // Система подписок и тарифных планов
+});
+
+// Система подписок и тарифных планов
+Route::middleware(['auth'])->group(function () {
     Route::prefix('subscriptions')->name('subscriptions.')->group(function () {
         Route::get('/', [App\Http\Controllers\SubscriptionController::class, 'index'])->name('index');
         Route::get('/manage', [App\Http\Controllers\SubscriptionController::class, 'manage'])->name('manage');
@@ -80,31 +104,27 @@ require __DIR__.'/roles/employee.php';
 // Подключение тестовых маршрутов для отладки
 require __DIR__.'/test.php';
 
-    // Отладочные роуты
-    Route::get('/debug/role-check', function () {
-        return view('debug.role-check');
-    })->name('debug.role-check');
-    
-    Route::get('/debug/ajax-test', function () {
-        return view('debug.ajax-test');
-    })->name('debug.ajax-test');
-    
-    Route::get('/debug/button-test', function () {
-        return view('debug.button-test');
-    })->name('debug.button-test');
-    
-    Route::get('/debug/button-visibility', function () {
-        return view('debug.button-visibility-test');
-    })->name('debug.button-visibility');
+// Отладочные роуты
+Route::get('/debug/role-check', function () {
+    return view('debug.role-check');
+})->name('debug.role-check');
 
-// Удалены маршруты системы электронных документов и подписи
+Route::get('/debug/ajax-test', function () {
+    return view('debug.ajax-test');
+})->name('debug.ajax-test');
+
+Route::get('/debug/button-test', function () {
+    return view('debug.button-test');
+})->name('debug.button-test');
+
+Route::get('/debug/button-visibility', function () {
+    return view('debug.button-visibility-test');
+})->name('debug.button-visibility');
 
 // Веб-маршруты для модальных окон (дополнительный путь для совместимости с аутентификацией)
 Route::middleware(['auth'])->prefix('projects/{projectId}')->group(function () {
     Route::get('/modals/{type}', 'App\Http\Controllers\ProjectModalController@getModal')->name('projects.modals.show');
 });
-
-// Удален тестовый маршрут для системы документов
 
 // Тестовый маршрут для проверки layout
 Route::get('/test-layout', function () {

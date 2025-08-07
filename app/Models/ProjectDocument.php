@@ -5,16 +5,20 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
-use Carbon\Carbon;
 
 class ProjectDocument extends Model
 {
     use HasFactory;
-
+    
+    /**
+     * Атрибуты, которые можно массово присваивать.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
         'project_id',
         'name',
-        'original_name',
+        'original_name', 
         'file_path',
         'file_size',
         'mime_type',
@@ -33,21 +37,31 @@ class ProjectDocument extends Model
         'received_signatures_count',
         'signature_deadline',
         'signature_settings',
+        'is_template_generated',
+        'template_type',
+        'template_variables',
     ];
-
+    
+    /**
+     * Преобразование атрибутов
+     *
+     * @var array<string, string>
+     */
     protected $casts = [
         'file_size' => 'integer',
-        'document_date' => 'date',
         'is_signed' => 'boolean',
         'requires_signature' => 'boolean',
         'required_signatures_count' => 'integer',
         'received_signatures_count' => 'integer',
-        'signature_deadline' => 'datetime',
+        'is_template_generated' => 'boolean',
         'signature_settings' => 'array',
+        'template_variables' => 'array',
+        'document_date' => 'date',
+        'signature_deadline' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
-
+    
     /**
      * Связь с проектом
      */
@@ -55,48 +69,34 @@ class ProjectDocument extends Model
     {
         return $this->belongsTo(Project::class);
     }
-
+    
     /**
-     * Связь с пользователем, который загрузил файл
+     * Связь с пользователем, который загрузил документ
      */
     public function uploader()
     {
         return $this->belongsTo(User::class, 'uploaded_by');
     }
-
-    // Удалены связи с системой электронных подписей
-
+    
     /**
      * Получить URL файла
      */
     public function getUrlAttribute()
     {
-        return Storage::url($this->file_path);
+        return $this->file_path ? Storage::url($this->file_path) : null;
     }
-
+    
     /**
-     * Получить полный путь к файлу
-     */
-    public function getFullPathAttribute()
-    {
-        return Storage::path($this->file_path);
-    }
-
-    /**
-     * Проверить, является ли файл изображением
-     */
-    public function isImage()
-    {
-        return str_starts_with($this->mime_type, 'image/');
-    }
-
-    /**
-     * Получить отформатированный размер файла
+     * Получить размер файла в человекочитаемом формате
      */
     public function getFormattedSizeAttribute()
     {
+        if (!$this->file_size) {
+            return 'Неизвестно';
+        }
+        
         $bytes = $this->file_size;
-        $units = ['B', 'KB', 'MB', 'GB'];
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
         
         for ($i = 0; $bytes > 1024 && $i < count($units) - 1; $i++) {
             $bytes /= 1024;
@@ -104,136 +104,103 @@ class ProjectDocument extends Model
         
         return round($bytes, 2) . ' ' . $units[$i];
     }
-
+    
     /**
      * Получить название типа документа
      */
     public function getDocumentTypeNameAttribute()
     {
-        $types = [
-            'contract' => 'Договор',
-            'estimate' => 'Смета',
-            'invoice' => 'Счет',
-            'permit' => 'Разрешение',
-            'certificate' => 'Сертификат',
-            'report' => 'Отчет',
-            'specification' => 'Спецификация',
-            'manual' => 'Руководство',
-            'other' => 'Другое',
-        ];
-
+        $types = self::getDocumentTypes();
         return $types[$this->document_type] ?? $this->document_type;
     }
-
+    
     /**
-     * Получить название категории
+     * Проверить, является ли файл изображением
      */
-    public function getCategoryNameAttribute()
+    public function isImage()
     {
-        $categories = [
-            'legal' => 'Юридические',
-            'financial' => 'Финансовые',
-            'technical' => 'Технические',
-            'administrative' => 'Административные',
-            'other' => 'Другие',
-        ];
-
-        return $categories[$this->category] ?? $this->category;
+        return in_array($this->mime_type, [
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'image/gif',
+            'image/webp',
+            'image/svg+xml'
+        ]);
     }
-
+    
     /**
-     * Получить статус подписи
+     * Проверить, является ли файл PDF
      */
-    public function getSignatureStatusAttribute()
+    public function isPdf()
     {
-        return $this->getAttribute('is_signed') ? 'Подписан' : 'Не подписан';
+        return $this->mime_type === 'application/pdf';
     }
-
+    
     /**
-     * Получить статус подписи документа
+     * Получить иконку для типа файла
      */
-    public function getSignatureStatusNameAttribute()
+    public function getFileIconAttribute()
     {
-        $statuses = [
-            'unsigned' => 'Не подписан',
-            'partial' => 'Частично подписан',
-            'fully_signed' => 'Полностью подписан',
-        ];
-
-        return $statuses[$this->getAttribute('signature_status')] ?? $this->getAttribute('signature_status');
-    }
-
-    /**
-     * Проверить, требуется ли подпись
-     */
-    public function requiresSignature()
-    {
-        return $this->getAttribute('requires_signature');
-    }
-
-    /**
-     * Проверить, полностью ли подписан документ
-     */
-    public function isFullySigned()
-    {
-        return $this->getAttribute('signature_status') === 'fully_signed';
-    }
-
-    /**
-     * Проверить, истек ли срок подписи
-     */
-    public function isSignatureExpired()
-    {
-        return $this->getAttribute('signature_deadline') && 
-               Carbon::parse($this->getAttribute('signature_deadline'))->isPast();
-    }
-
-    /**
-     * Получить прогресс подписания
-     */
-    public function getSignatureProgressAttribute()
-    {
-        $required = $this->getAttribute('required_signatures_count');
-        $received = $this->getAttribute('received_signatures_count');
-
-        if ($required === 0) {
-            return 0;
+        if ($this->isImage()) {
+            return 'fas fa-image';
         }
-
-        return round(($received / $required) * 100);
-    }
-
-    /**
-     * Обновить статус подписи документа
-     */
-    public function updateSignatureStatus()
-    {
-        $signaturesCount = $this->signatures()->where('status', 'signed')->count();
-        $this->received_signatures_count = $signaturesCount;
-
-        if ($signaturesCount === 0) {
-            $this->signature_status = 'unsigned';
-        } elseif ($signaturesCount >= $this->required_signatures_count) {
-            $this->signature_status = 'fully_signed';
-            $this->is_signed = true;
-        } else {
-            $this->signature_status = 'partial';
+        
+        if ($this->isPdf()) {
+            return 'fas fa-file-pdf';
         }
-
-        $this->save();
+        
+        switch ($this->mime_type) {
+            case 'application/vnd.ms-excel':
+            case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+                return 'fas fa-file-excel';
+            case 'application/msword':
+            case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+                return 'fas fa-file-word';
+            case 'application/vnd.ms-powerpoint':
+            case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
+                return 'fas fa-file-powerpoint';
+            case 'application/zip':
+            case 'application/x-rar-compressed':
+            case 'application/x-7z-compressed':
+                return 'fas fa-file-archive';
+            case 'text/plain':
+                return 'fas fa-file-alt';
+            default:
+                return 'fas fa-file';
+        }
     }
-
+    
     /**
-     * Удалить файл при удалении модели
+     * Типы документов
      */
-    public static function boot()
+    public static function getDocumentTypes()
     {
-        parent::boot();
-
-        static::deleting(function ($document) {
-            if (Storage::exists($document->file_path)) {
-                Storage::delete($document->file_path);
-            }
-        });
+        return [
+            'contract' => 'Договор',
+            'act' => 'Акт',
+            'invoice' => 'Счет',
+            'estimate' => 'Смета',
+            'technical' => 'Техническая документация',
+            'drawing' => 'Чертеж',
+            'photo' => 'Фотография',
+            'certificate' => 'Сертификат',
+            'permit' => 'Разрешение',
+            'other' => 'Прочее'
+        ];
+    }
+    
+    /**
+     * Статусы документов
+     */
+    public static function getStatuses()
+    {
+        return [
+            'draft' => 'Черновик',
+            'review' => 'На рассмотрении',
+            'approved' => 'Утвержден',
+            'rejected' => 'Отклонен',
+            'archived' => 'Архивирован'
+        ];
     }
 }
